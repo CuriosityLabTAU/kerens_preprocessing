@@ -1,6 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
-
 import glob, os
 import ast
 from datetime import datetime
@@ -9,6 +8,14 @@ import matplotlib.pyplot as plt
 import operator
 import json
 from pprint import pprint
+
+unicode_faculty = [unicode(x, 'utf-8') for x in ['תויונמא', 'הרבחה יעדמ', 'םייחה יעדמ', 'תואירבו האופר','הסדנה','חורה יעדמ', 'םיטפשמ', 'לוהינ', 'םיקיודמ םיעדמ']]
+unicode_gender = [unicode(x, 'utf-8') for x in ['רכז','הבקנ']]
+emotion_list = ['smirk','engagement','surprise','attention','joy','valence', 'smile']
+
+def extract_filename(full_filename):
+    parts = full_filename.split('\\')
+    return parts[1]
 
 
 
@@ -31,16 +38,18 @@ def initial(num_tablet, experiments,path,faculty):
         current_tab = 'Tab'+str(i+1)
         row_data[current_tab]={}
         dict[current_tab] = {}
-        os.chdir(path+str(i+1))      #change the current working directory to the given path
+        # os.chdir(path+str(i+1))      #change the current working directory to the given path
+        tab_path = path+str(i+1) + '/'
+        all_log_files = glob.glob(tab_path + "*.log")
 
-        for file in glob.glob("*.log"):        #glob.glob returns a list of path names that match the .log ending
+        for file in glob.glob(tab_path + "*.log"):        #glob.glob returns a list of path names that match the .log ending
             file= str(file)
-            dict[current_tab][file]= { "experiment": "",
+            dict[current_tab][file]= { "experiment": None,
                                        "out_of_data": "",
                                        "personal_info":
-                                           {"gender": -1,
+                                           {"gender": "-1",
                                             "email": -1,
-                                            "faculty": -1,
+                                            "faculty": "-1",
                                             "age": -1},
                                        "buttons":{},
                                        "t0": -1,
@@ -50,32 +59,33 @@ def initial(num_tablet, experiments,path,faculty):
                                            {"art": 0, "eng": 0, "exa": 0, "hum": 0, "law": 0, "lif": 0, "man": 0, "med": 0,
                                             "soc": 0},
                                        "curiosity_ques":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                                       "curiosity_ques_stre": 0,
-                                       "curiosity_ques_embr": 0,
+                                       "curiosity_ques_stre": -1,
+                                       "curiosity_ques_embr": -1,
                                        "learning_ques": {"questions":[]},
                                        'trans_matrix':
                                                         {'count':0,
                                                          'prop':0,
                                                          'e_trans':0,},
                                          "wav_sorted":{},
-                                         "fac_prop":
+                                         "fac_heard":
                                                         {"art":0,"eng":0,"exa":0,"hum":0,"law":0,"lif":0,"man":0,"med":0,"soc":0},
                                          "e_multidis":0,
                                          "faces":-1}
 
-            data = open(path+str(i+1)+"//"+str(file), 'r')
+            # data = open(path+str(i+1)+"/"+str(file), 'r')
+            data = open(str(file), 'r')
             data1=ast.literal_eval(data.readline())
 
             #evaluate an expression node/Unicode/Latin-1 encoded string
                                                     # containing a Python literal or container display
 
             for key in data1.keys():
-                if key[5:10] == "02_03" or key[5:10] == "05_24":
-                   # print(data1[key]["data"],"expr3-4")
-                    data1[key]["data"] = ast.literal_eval(data1[key]["data"])["log"]
+                if key[5:10] == "02_03":
+                    data1[key]["data"] = json.loads(data1[key]["data"])['log'] #ast.literal_eval(data1[key]["data"])["log"]
+                    #print(data1[key]["data"],"expr3")
                 else:
-                   # print(data1[key]["data"],"expr1-2")
-                    data1[key]["data"] = ast.literal_eval(data1[key]["data"])
+                    data1[key]["data"] = json.loads(data1[key]["data"]) #ast.literal_eval(data1[key]["data"])
+                    #print(data1[key]["data"],"expr1-2")
 
             row_data[current_tab][file] = data1
     return amount_of_data,row_data,dict
@@ -86,6 +96,7 @@ def initial(num_tablet, experiments,path,faculty):
 ####            Mark out of data files according to date              ######
 ############################################################################
 def out_of_data(num_tablet,amount_of_data,experiments,dict):
+    file_start = len('curiosity_tabs_1_2_3_4_5/tab1\\')
     for i in range(num_tablet):
         current_tab = 'Tab'+str(i+1)
         amount_of_data['relevent_data_per_tab'][current_tab] = {}
@@ -105,8 +116,8 @@ def out_of_data(num_tablet,amount_of_data,experiments,dict):
 
             #### OUT OF DATA dict[current_tab][file]['out_of_data']=
             for expr in experiments:
-                if file[:10] == experiments[expr][0]:
-                    if (file[11:13] in experiments[expr][1]):
+                if file[file_start:(file_start+10)] == experiments[expr][0]:
+                    if (file[(file_start+11):(file_start+13)] in experiments[expr][1]):
                         amount_of_data['relevent_data_per_tab'][current_tab][expr] += 1
 
                         #### EXPERIMENT dict[current_tab][file]['experiment']=
@@ -131,9 +142,10 @@ def build_data_dict(amount_of_data,dict,num_tablet,row_data):
     amount_of_data['email'] = {}
     amount_of_data['faculty'] = {}
     amount_of_data['age'] = {}
-    #path2_face_expression = "C://Users//kerenbt//Downloads//%PYTHON_HOME%//projects//open_day_2//curiosity_tabs_1_2_3_4_5//affectiva_subject_stats.json"
-    #with open(path2_face_expression) as face_data:
-     #   faces_data = json.load(face_data)
+    path2_face_expression = "C://Users//kerenbt//Downloads//%PYTHON_HOME%//projects//open_day_2//curiosity_tabs_1_2_3_4_5//affectiva_subject_stats.json"
+    path2_face_expression = "curiosity_tabs_1_2_3_4_5//affectiva_subject_stats.json"
+    with open(path2_face_expression) as face_data:
+        faces_data = json.load(face_data)
     #pprint(faces_data)
 
     for i in range(num_tablet):
@@ -151,7 +163,7 @@ def build_data_dict(amount_of_data,dict,num_tablet,row_data):
                                                             # in the following part, will also add out of data from other reasons like
                                                             # not fully answered curiosity_questions
             try:
-                dict[current_tab][file]["faces"] = faces_data[current_tab.lower()][file]
+                dict[current_tab][file]["faces"] = faces_data[current_tab.lower()][extract_filename(file)]
                 #print (dict[current_tab][file],count)
                 count+=1
             except:
@@ -162,101 +174,80 @@ def build_data_dict(amount_of_data,dict,num_tablet,row_data):
                 #print(current_value['data']['obj'])
 
                 #### GENDER dict[current_tab][file]["personal_info"]['gender']=
-                try:
-                    if current_value['data']['obj'] in ['gender']:
-                        if current_value['data']['comment'] in ['רכז','הבקנ']: # to prevent "pos": "(x,y)" comments
-                            amount_of_data['gender'][current_tab].append(current_value['data']['comment'])
-                            dict[current_tab][file]["personal_info"]['gender'] = current_value['data']['comment']
-                except:
-                    print(file,"gender")
+                if current_value['data']['obj'] in ['gender']:
+                    if current_value['data']['comment'] in unicode_gender: # to prevent "pos": "(x,y)" comments
+                        amount_of_data['gender'][current_tab].append(current_value['data']['comment'])
+                        dict[current_tab][file]["personal_info"]['gender'] = current_value['data']['comment']
+
                 #### EMAIL dict[current_tab][file]["personal_info"]['email']=
                 ## keeps a list of tuples (time stamp,email), will chose the relevent according to latest time stamp
 
-                try:
-                    if current_value['data']['obj'] in ['email']:
-                         time=datetime.strptime(current_value['data']['time'], '%Y_%m_%d_%H_%M_%S_%f')
-                         amount_of_data['email'][current_tab][file].append((time,current_value['data']['comment']))
-                        #print(current_value['data']['comment'],file)
-                except:
-                    print(file,"email")
+                if current_value['data']['obj'] in ['email']:
+                     time=datetime.strptime(current_value['data']['time'], '%Y_%m_%d_%H_%M_%S_%f')
+                     amount_of_data['email'][current_tab][file].append((time,current_value['data']['comment']))
+                     #print(current_value['data']['comment'],file)
 
 
                 #### FACULTY dict[current_tab][file]["personal_info"]['faculty']=
-                try:
-                    if current_value['data']['obj'] in ["faculty"]:
-                        if current_value['data']['comment'] in ['תויונמא', 'הרבחה יעדמ', 'םייחה יעדמ', 'תואירבו האופר','הסדנה','חורה יעדמ', 'םיטפשמ', 'לוהינ', 'םיקיודמ םיעדמ']:
-                            print(current_value['data']['comment'])
-                            dict[current_tab][file]["personal_info"]['faculty'] = current_value['data']['comment']
-                            if dict[current_tab][file]["experiment"]== "expr2":
-                                check_faculty.append((file,current_tab,dict[current_tab][file]["experiment"],current_value['data']['comment']))
-                except:
-                    print(file,"faculty")
+                if current_value['data']['obj'] in ["faculty"]:
+                    cv_unicode = current_value['data']['comment']
+
+                    if cv_unicode in unicode_faculty:
+                        #print(current_value['data']['comment'])
+                        dict[current_tab][file]["personal_info"]['faculty'] = current_value['data']['comment']
+                        if dict[current_tab][file]["experiment"]== "expr2":
+                            check_faculty.append((file,current_tab,dict[current_tab][file]["experiment"],current_value['data']['comment']))
 
                 #### AGE dict[current_tab][file]["personal_info"]['age']=
                 ## keeps a list of tuples (time stamp,age), will chose the relevent according to latest time stamp
-                try:
-                    if current_value['data']['obj'] in ['age']:
-                        time = datetime.strptime(current_value['data']['time'], '%Y_%m_%d_%H_%M_%S_%f')
-                        amount_of_data['age'][current_tab][file].append((time, current_value['data']['comment']))
-                except:
-                    print(file,"age")
-
+                if current_value['data']['obj'] in ['age']:
+                    time = datetime.strptime(current_value['data']['time'], '%Y_%m_%d_%H_%M_%S_%f')
+                    amount_of_data['age'][current_tab][file].append((time, current_value['data']['comment']))
 
                 #### BUTTONS dict[current_tab][file]['buttons']=
-                try:
-                    if current_value['data']['obj'] in ['consent_button','consent_checkbox','final_button']:
-                        time = datetime.strptime(current_value['data']['time'], '%Y_%m_%d_%H_%M_%S_%f')
-                        time2 = datetime.strptime( key, '%Y_%m_%d_%H_%M_%S_%f')
-                        dict[current_tab][file]["buttons"][current_value['data']['obj']] = time
-                        dict[current_tab][file]["buttons"][current_value['data']['obj']+str(2)] = time2 # capture the key as time stamp
-                except:
-                    print(file,"buttons")
+                if current_value['data']['obj'] in ['consent_button','consent_checkbox','final_button']:
+                    time = datetime.strptime(current_value['data']['time'], '%Y_%m_%d_%H_%M_%S_%f')
+                    time2 = datetime.strptime( key, '%Y_%m_%d_%H_%M_%S_%f')
+                    dict[current_tab][file]["buttons"][current_value['data']['obj']] = time
+                    dict[current_tab][file]["buttons"][current_value['data']['obj']+str(2)] = time2 # capture the key as time stamp
+
 
                 #### TO dict[current_tab][file]['t0']=
-                try:
-                    if current_value['data']['obj'] in ['t0']:
-                        time = datetime.strptime(current_value['data']['time'], '%Y_%m_%d_%H_%M_%S_%f')
-                        dict[current_tab][file]["t0"] = time
-                        check_t0.append((file, current_tab, dict[current_tab][file]["experiment"], time))
-                        #print(file, dict[current_tab][file]['t0'])
-                except:
-                    print(file,"t0")
+                if current_value['data']['obj'] in ['t0']:
+                    time = datetime.strptime(current_value['data']['time'], '%Y_%m_%d_%H_%M_%S_%f')
+                    dict[current_tab][file]["t0"] = time
+                    check_t0.append((file, current_tab, dict[current_tab][file]["experiment"], time))
+                    #print(file, dict[current_tab][file]['t0'])
 
                 #### PLAYING TIME dict[current_tab][file]["wav"]= (wav_full_name.WAV: [("play",play_time),("stop",stop_time)...]
                 ## first part - saving playing and stop time
-                try:
-                    if current_value['data']['obj'].lower() in ["art","eng","exc","hum","law","life","man","med","soc"]:
-                        if "pos" not in current_value['data']['comment']:
-                            if current_value['data']['obj'].lower()=="life":
-                                current_value['data']['obj']="lif"
-                            if current_value['data']['obj'].lower()=="exa":
-                                current_value['data']['obj']="exc"
-                            if current_value['data']['comment'].lower() in dict[current_tab][file]['wav'].keys():
-                                #print( current_value['data']['comment'])
-                                dict[current_tab][file]['wav'][current_value['data']['comment'].lower()].append((
-                                    current_value['data']['action'],current_value['data']['time']))
-                            else:
-                                dict[current_tab][file]['wav'][current_value['data']['comment'].lower()] = []
-                                dict[current_tab][file]['wav'][current_value['data']['comment'].lower()].append((
-                                    current_value['data']['action'],current_value['data']['time']))
-                except:
-                    print(file,"playing time")
+                if current_value['data']['obj'].lower() in ["art","eng","exc","hum","law","life","man","med","soc"]:
+                    if "pos" not in current_value['data']['comment']:
+                        if current_value['data']['obj'].lower()=="life":
+                            current_value['data']['obj']="lif"
+                        if current_value['data']['obj'].lower()=="exa":
+                            current_value['data']['obj']="exc"
+                        if current_value['data']['comment'].lower() in dict[current_tab][file]['wav'].keys():
+                            #print( current_value['data']['comment'])
+                            dict[current_tab][file]['wav'][current_value['data']['comment'].lower()].append((
+                                current_value['data']['action'],current_value['data']['time']))
+                        else:
+                            dict[current_tab][file]['wav'][current_value['data']['comment'].lower()] = []
+                            dict[current_tab][file]['wav'][current_value['data']['comment'].lower()].append((
+                                current_value['data']['action'],current_value['data']['time']))
+
                 #### CURIOSITY QUESTIONS dict[current_tab][file]['"curiosity_ques"']=[0,0,0,0,0,0,0,0,0,0]
-                try:
-                    if "q" in current_value['data']['obj']:
-                        ques = int(current_value['data']['obj'][1:3])
-                        ans = current_value['data']['obj'][7]
-                        dict[current_tab][file]['curiosity_ques'][ques-1]=ans
-                except:
-                    print(file,"questions")
+                if "q" in current_value['data']['obj']:
+                    ques = int(current_value['data']['obj'][1:3])
+                    ans = current_value['data']['obj'][7]
+                    dict[current_tab][file]['curiosity_ques'][ques-1]=ans
+
 
                 #### LEARNING QUESTIONS dict[current_tab][file]["learning_ques"]: {"questions":[],(_,_),(_,_)}
-                try:
-                    if "correct" in current_value['data']['obj'] or "wrong" in current_value['data']['obj']:
-                        if current_value['data']['obj'] not in dict[current_tab][file]["learning_ques"]["questions"]:
-                              dict[current_tab][file]["learning_ques"]["questions"].append(current_value['data']['obj'])
-                except:
-                    print(file,"gender")
+                if "correct" in current_value['data']['obj'] or "wrong" in current_value['data']['obj']:
+                    if current_value['data']['obj'] not in dict[current_tab][file]["learning_ques"]["questions"]:
+                          dict[current_tab][file]["learning_ques"]["questions"].append(current_value['data']['obj'])
+
 
             #### EMAIL and AGE #2, needs a special process cause the data is saved every time typing
             #    for Exmaple : 1. ker 2. keren.bentob 3. keren.bentov@gmai 4. keren.bentov@gmail.com
@@ -323,6 +314,12 @@ def build_data_dict(amount_of_data,dict,num_tablet,row_data):
             dict[current_tab][file]["curiosity_ques_stre"] = sum(
                                                             int(dict[current_tab][file]['curiosity_ques'][j]) for j in [0, 2, 4, 6, 8])
 
+            BFI_sign = [1,1,1,1,1,1,-1,1,-1,1]
+            dict[current_tab][file]["BFI"] = 0.0
+            for j in [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]:
+                dict[current_tab][file]["BFI"] += float(dict[current_tab][file]['curiosity_ques'][j]) * float(BFI_sign[j-10])
+            dict[current_tab][file]["BFI"] /= 10.0
+
             #print("embr", dict[current_tab][file]["curiosity_ques_embr"], "stre",
                 #dict[current_tab][file]["curiosity_ques_stre"])
 
@@ -337,18 +334,21 @@ def build_data_dict(amount_of_data,dict,num_tablet,row_data):
                     c+=1
             if c!=10 and c!=0 :
                 dict[current_tab][file]["out_of_data"] = "curiosity_questions_not_full_amount, 1-9"
-#                amount_of_data['curiosity_questions_not_full_amount'][current_tab][dict[current_tab][file]['experiment']] += 1
+                if dict[current_tab][file]['experiment'] is not None:
+                    amount_of_data['curiosity_questions_not_full_amount'][current_tab][dict[current_tab][file]['experiment']] += 1
                 #print(row_data[current_tab][file])
             if dict[current_tab][file]['experiment']:
                 if c==0:
                     dict[current_tab][file]["out_of_data"]="curiosity_questions_is_empty, 0"
-#                    amount_of_data['curiosity_questions_is_empty'][current_tab][dict[current_tab][file]['experiment']] +=1
+                    if dict[current_tab][file]['experiment'] is not None:
+                        amount_of_data['curiosity_questions_is_empty'][current_tab][dict[current_tab][file]['experiment']] +=1
                     #print(row_data[current_tab][file])
     #for key in amount_of_data:
         #if key=='curiosity_questions_not_full_amount' or key=='curiosity_questions_is_empty':
             #print(key,amount_of_data[key])
     # check why only 28 files has T0, also what are 2 time in comment - first screen to first touch?
     # for t0 in check_t0:
+    #     print("t0",t0,len(check_t0))
     #     print("t0",t0,len(check_t0))
 
     return amount_of_data, dict, check_faculty, check_t0
@@ -378,20 +378,30 @@ def data_processing(num_tablet,dict,faculty,faculty_en_to_heb ):
     # prop per file and faculty
     for k, v in dict.items():
         for participant, value in v.items():
-            for fac,p in value["fac_prop"].items():
+            for fac,p in value["fac_heard"].items():
                 if value['listen_t']["tot"]!=0:
-                    value["fac_prop"][fac]=value['list_fac'][fac]/value['listen_t']["tot"]
+                    value["fac_heard"][fac]=value['list_fac'][fac]
 
     # calculating the Entropy(Multi Dis)  dict[current_tab][file]["e_multidis"}=
     e_m =[]
     for k, v in dict.items():
         for participant, value in v.items():
-            for fac,p in value["fac_prop"].items():
-                if p!=0:
+            number_heard = 0
+            for fac,h in value["fac_heard"].items():
+                if h!=0:
+                    p = h /float(value['listen_t']["tot"])
                     #print((np.log2(p))*p)
-                    value["e_multidis"] +=  (np.log2(p))*p
+                    value["e_multidis"] -=  (np.log2(p))*p
+                    number_heard += 1
             #print("ch",(-1)*value["e_multidis"])
-            value["e_multidis"]=value["e_multidis"]*(-1)
+            # --- calculate normalization = equal hearing of all parts -------
+            # --- norm_entropy ==> high heard all, low heard the same
+            if number_heard < 2:
+                value["e_multidis"] = 0.0
+            else:
+                p_normalization = 1.0 / float(number_heard)
+                normalization = -np.log2(p_normalization)
+                value["e_multidis"]= (value["e_multidis"] / normalization)
             e_m.append(value["e_multidis"])
     e_m = np.array(e_m)
 
@@ -409,7 +419,7 @@ def data_processing(num_tablet,dict,faculty,faculty_en_to_heb ):
                         dict[current_tab][file]['wav_sorted'][datetime.strptime(p_s[1],'%Y_%m_%d_%H_%M_%S_%f')]=wav[6:9]
 
 
-    x = [["" for i in range(10)] for j in range(945)]
+    x = [["" for i in range(10)] for j in range(587)]
     r=0
     subject_with_faculty=0
     subject_with_faculty_equal_1st_wav = 0
@@ -426,7 +436,7 @@ def data_processing(num_tablet,dict,faculty,faculty_en_to_heb ):
                 #dict[current_tab][file]["t0"] =datetime.strptime(dict[current_tab][file]['wav_sorted'][0][0], '%Y_%m_%d_%H_%M_%S_%f') - datetime.strptime(dict[current_tab][file]['buttons']['consent_button'], '%Y_%m_%d_%H_%M_%S_%f')
                 if dict[current_tab][file]['buttons']:
                     dict[current_tab][file]["t0"] =dict[current_tab][file]['wav_sorted'][0][0] - dict[current_tab][file]['buttons']['consent_button']
-                    ##print(file,dict[current_tab][file]["t0"],"t0")
+                    print(file,dict[current_tab][file]["t0"],"t0")
                 #wav_sorted2 contain just the Fac name [eng,med,exa..]
                 dict[current_tab][file]['wav_sorted2'] = []
                 for wav in dict[current_tab][file]['wav_sorted']:
@@ -435,7 +445,7 @@ def data_processing(num_tablet,dict,faculty,faculty_en_to_heb ):
                 #print( faculty_en_to_heb[dict[current_tab][file]['first_wav_faculty']], dict[current_tab][file]['personal_info']['faculty'])
                 if dict[current_tab][file]['personal_info']['faculty'] != -1:
                     subject_with_faculty+=1
-                if faculty_en_to_heb[dict[current_tab][file]['first_wav_faculty']]== dict[current_tab][file]['personal_info']['faculty']:
+                if faculty_en_to_heb[dict[current_tab][file]['first_wav_faculty']] == dict[current_tab][file]['personal_info']['faculty']:
                     dict[current_tab][file]['first_faculty_is_the_same'] = 1
                     subject_with_faculty_equal_1st_wav+=1
                 else:
@@ -466,7 +476,7 @@ def data_processing(num_tablet,dict,faculty,faculty_en_to_heb ):
 
     print("subject_with_faculty",subject_with_faculty)
     print("subject_with_faculty_equal_1st_wav",subject_with_faculty_equal_1st_wav)
-#    print("% subject_with_faculty_equal_1st_wav/subject_with_faculty",subject_with_faculty_equal_1st_wav/subject_with_faculty)
+    # print("% subject_with_faculty_equal_1st_wav/subject_with_faculty",subject_with_faculty_equal_1st_wav/subject_with_faculty)
 
     x = np.matrix(x)
     #x = e_multi_matrix
@@ -493,6 +503,7 @@ def data_processing(num_tablet,dict,faculty,faculty_en_to_heb ):
         current_tab = 'Tab'+str(i+1)
         for file in dict[current_tab].keys():
             y = np.zeros((len(faculty),len(faculty)))
+            num_transitions = 0
             for r in range(1,len(dict[current_tab][file]['wav_sorted'])):
                 #print("sorted wav for participant:")
                 #print(dict[current_tab][file]['wav_sorted'])
@@ -506,12 +517,18 @@ def data_processing(num_tablet,dict,faculty,faculty_en_to_heb ):
                 #print(faculty.index(f),faculty.index(s))
                 #print(y,"before")
                 y[faculty.index(list(dict[current_tab][file]['wav_sorted'])[r-1][1]),faculty.index(list(dict[current_tab][file]['wav_sorted'])[r][1])] += 1
+                num_transitions += 1
                 #print(y,'after')
             dict[current_tab][file]['trans_matrix']['count'] = y
+            dict[current_tab][file]['trans_matrix']['num_transitions'] = num_transitions
             sum_y=np.sum(y)
             if sum_y>4:
                 n_of_more_than_3_wavs+=1
+            # CHANGED
+            if num_transitions > 1:
                 dict[current_tab][file]['trans_matrix']['prop'] = np.divide(y,sum_y)
+            else:
+                dict[current_tab][file]['trans_matrix']['prop'] = None
             #print(file,dict[current_tab][file]['trans_matrix']['count'],dict[current_tab][file]['trans_matrix']['prop'])
 
     e_t = []
@@ -541,16 +558,20 @@ def data_processing(num_tablet,dict,faculty,faculty_en_to_heb ):
                 stre_big.append(dict[current_tab][file]["curiosity_ques_stre"])
                 embr_big.append(dict[current_tab][file]["curiosity_ques_embr"])
 
-            if type(dict[current_tab][file]['trans_matrix']['prop'])!= int: #had more than 3 wavs
+            if dict[current_tab][file]['trans_matrix']['prop'] is not None: #had more than 3 wavs
                 for x in np.nditer(dict[current_tab][file]['trans_matrix']['prop']):
                     if x!=0:
                         #print(x,"log",np.log2(x)*(x))
-                        sum_prop +=  (np.log2(x))*(x)
+                        sum_prop -=  (np.log2(x))*(x)
                         #print(sum_prop)
-                dict[current_tab][file]['trans_matrix']['e_trans']=( -1)*sum_prop
+                # --- normalization of transition matrix = log2(1/num_transitions) ---
+                # --- norm_entropy ==> high all transitions (chaos), low very ordered
+                p_normalization = 1.0 / float(dict[current_tab][file]['trans_matrix']['num_transitions'])
+                normalization = -np.log2(p_normalization)
+                dict[current_tab][file]['trans_matrix']['e_trans']= sum_prop / normalization
                 faculties_num=0
-                for x in dict[current_tab][file]['fac_prop']:  #check how many diffrent faculties wav has benn listened
-                    if dict[current_tab][file]['fac_prop'][x]>0:
+                for x in dict[current_tab][file]['fac_heard']:  #check how many diffrent faculties wav has benn listened
+                    if dict[current_tab][file]['fac_heard'][x]>0:
                         #print(dict[current_tab][file]['fac_prop'][x],x,file)
                         faculties_num+=1
                 #print("sum",dict[current_tab][file]['trans_matrix']['e_trans'])
@@ -779,15 +800,17 @@ def graphs(total_time,e_m,e_t,e_m_small,total_small,e_m_big,total_big,embr_big,s
 def create_excel(dict):
     # convert from dict to numpy array, convert to Excel file
     print(' ------ ')
-    faculty_list = [-1,'תויונמא', 'הרבחה יעדמ', 'םייחה יעדמ', 'תואירבו האופר', 'הסדנה',
+    faculty_list_non_unicode = ["-1", 'תויונמא', 'הרבחה יעדמ', 'םייחה יעדמ', 'תואירבו האופר', 'הסדנה',
      'חורה יעדמ', 'םיטפשמ', 'לוהינ', 'םיקיודמ םיעדמ', '']
-    gender_list = [-1,'רכז','הבקנ']
-    experiments_list = ["","expr1","expr2","expr3","expr4"]
+    faculty_list = [unicode(x, 'utf-8') for x in faculty_list_non_unicode]
+    gender_list_non_unicode = ["-1",'רכז','הבקנ']
+    gender_list = [unicode(x, 'utf-8') for x in gender_list_non_unicode]
+    experiments_list = [None,"expr1","expr2","expr3"]
     #out_of_data_list=["","not at hour","not at day","curiosity_questions_not_full_amount, 1-9","curiosity_questions_is_empty, 0"]
     age_list=[-1,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,
               31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,
               59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,
-              87,88,89,90,91,92,93,94,95,96,97,98,99,100,185,""]
+              87,88,89,90,91,92,93,94,95,96,97,98,99,100,""]
     for i in age_list:
        age_list[age_list.index(i)]=str(i)
 
@@ -798,7 +821,8 @@ def create_excel(dict):
             number_of_subjects += 1
     print('number_of_subjects: ', number_of_subjects)
 
-    x = np.ndarray((number_of_subjects, 51)).astype(object)
+    x_size = 52 + 2*len(emotion_list) + 1
+    x = np.ndarray((number_of_subjects, x_size)).astype(object)
     column_titles = []   #columns_titles
     subject_number = -1  #columns_amount
     subject_files = [] #rows,participants
@@ -828,12 +852,12 @@ def create_excel(dict):
             #if subject_number == 0:
 
 
-            #email
-            #x[subject_number, c] = v2['personal_info']['email']
-            ##print(x[subject_number, c])
-            #c += 1
-            #if subject_number == 0:
-            #     column_titles.append('email')
+        #     #email
+        #     x[subject_number, c] = v2['personal_info']['email']
+        # #print(x[subject_number, c])
+        #     c += 1
+        #     if subject_number == 0:
+        #          column_titles.append('email')
 
             #gender
             x[subject_number, c] = float(gender_list.index(v2['personal_info']['gender']))
@@ -860,17 +884,20 @@ def create_excel(dict):
 
             # buttons   --- needed???
 
-            #t0
+            #t0  - normalized to [0,120] ==> [0, 1]
             if v2['t0']!= -1:
-                x[subject_number, c]=(v2['t0'].seconds)
+                x[subject_number, c]= (v2['t0'].seconds)
+                x[subject_number, c] /= 120.0
             else:
-                x[subject_number, c] = (v2['t0'])
+                x[subject_number, c] = -1 #(v2['t0'])
+
+
             c += 1
             if subject_number == 0:
                 column_titles.append('t0')
 
             #total listenning time
-            x[subject_number, c] = float(v2['listen_t']['tot'])
+            x[subject_number, c] = float(v2['listen_t']['tot']) / 120.0
             c += 1
             if subject_number == 0:
                 column_titles.append('total listenning time')
@@ -881,27 +908,39 @@ def create_excel(dict):
                 x[subject_number, c] = float(q)
                 c += 1
                 if i in [16,18] and q!=0:
-                    ##print(i, q)
+                    print(i, q)
                     x[subject_number, c] = 6-float(q)
-                    ##print(x[subject_number, c] )
+                    print(x[subject_number, c] )
 
                 if subject_number == 0:
                     column_titles.append('curiosity question ' + str(i+1))
 
-            #curiosity_questions stre
-            x[subject_number, c] = float(v2["curiosity_ques_stre"])
+            #curiosity_questions stre- normalized [0.0, 1.0]
+            if float(v2["curiosity_ques_stre"]) > 0:
+                x[subject_number, c] = float(v2["curiosity_ques_stre"])
+                x[subject_number, c] = (x[subject_number, c] - 5.0) / 20.0
+            else:
+                x[subject_number, c] = -1
             c += 1
             if subject_number == 0:
                 column_titles.append('curiosity_ques_stretching')
 
-            #curiosity_questions embr
-            x[subject_number, c] = float(v2["curiosity_ques_embr"])
+            #curiosity_questions embr - normalized [0.0, 1.0]
+            if float(v2["curiosity_ques_embr"]) > 0:
+                x[subject_number, c] = float(v2["curiosity_ques_embr"])
+                x[subject_number, c] = (x[subject_number, c] - 5.0) / 20.0
+            else:
+                x[subject_number, c] = -1
             c += 1
             if subject_number == 0:
                 column_titles.append('curiosity_ques_embracing')
 
-            #curiosity_questions TOTAL
-            x[subject_number, c] = float(v2["curiosity_ques_embr"]) + float(v2["curiosity_ques_stre"])
+            #curiosity_questions TOTAL- normalized [0.0, 1.0]
+            if float(v2["curiosity_ques_stre"]) > 0 and float(v2["curiosity_ques_embr"]) > 0:
+                x[subject_number, c] = float(v2["curiosity_ques_embr"]) + float(v2["curiosity_ques_stre"])
+                x[subject_number, c] = (x[subject_number, c] - 10.0) / 40.0
+            else:
+                x[subject_number, c] = -1
             c += 1
             if subject_number == 0:
                 column_titles.append('curiosity_ques_embr+strt TOTAL')
@@ -925,11 +964,11 @@ def create_excel(dict):
 
 
              #listening time - per faculty
-            for i in v2['fac_prop']:
-                x[subject_number, c] =  float(v2['fac_prop'][i])
+            for i in v2['fac_heard']:
+                x[subject_number, c] =  float(v2['fac_heard'][i])
                 c += 1
                 if subject_number == 0:
-                    column_titles.append('listening prop - per faculty:' + str(i))
+                    column_titles.append('listening per faculty:' + str(i))
 
 
             #Multi entropy
@@ -939,6 +978,7 @@ def create_excel(dict):
                 column_titles.append('Multi discipline entropy')
 
             #learning questions
+            temp_c = c
             q_num=0
             for i in v2["learning_ques"]:
                 if i!="questions":
@@ -956,31 +996,45 @@ def create_excel(dict):
                     column_titles.append('learning ' + str(j+1))
                     column_titles.append('learning ' + str(j + 1) + "- answer")
                     #print('learning ' + str(j+1))
-            #c+= 5-q_num
+            c = temp_c + 8
 
-            '''if subject_number == 0:
-                for emotion in ['smirk','engagement','surprise','attention','joy','valence']:
+            # BFI - normalized [0.0, 1.0]
+            x[subject_number, c] = float(v2["BFI"])
+            x[subject_number, c] /= 5.0
+            c += 1
+            if subject_number == 0:
+                column_titles.append('BFI')
+
+            # faces normalized [0.0, 1.0]
+            if subject_number == 0:
+                for emotion in emotion_list:
                     column_titles.append(emotion + " mean")
                     column_titles.append(emotion + " std")
             if v2['faces']!=-1:
                 count += 1
-                for emotion in v2['faces']:
-                    if emotion in ['smirk','engagement','surprise','attention','joy','valence','smile']:
+                for emotion in emotion_list:
+                    if emotion in v2['faces']:
                         #print("***",emotion)
                         #print("*******",v2['faces'][emotion])
-                        x[subject_number, c] = (v2['faces'][emotion]['mean'])
-                        c += 1
-                        x[subject_number, c] = (v2['faces'][emotion]['std'])
-                        c += 1
+                        x[subject_number, c] = (v2['faces'][emotion]['mean']) / 100.0
+                        x[subject_number, c+1] = (v2['faces'][emotion]['std'])
+                    c += 2
             else:
-                for i in range(c,c+14):
-                    x[subject_number, i]="NONE"
-                    x[subject_number, i]="NONE"
-                c+=14'''
+                c+=2*len(emotion_list)
+
+            # normalized total listenning time
+            if v2['t0'] != -1:
+                x[subject_number, c] = float(v2['listen_t']['tot']) / (120.0 - float(v2['t0'].seconds))
+            else:
+                x[subject_number, c] = -1
+                # x[subject_number, c] = float(v2['listen_t']['tot']) / (120.0 - float(v2['t0']))
+            c += 1
+            if subject_number == 0:
+                column_titles.append('normalized total listenning time')
 
     #print(x.shape())
     x[:,0]=x[:,0]+1
-    x[:,:]=x[:,:51]
+    x[:,:]=x[:,:x_size]
 
     #clean O and more
     for i in range(x.shape[0]): #row index
@@ -988,24 +1042,31 @@ def create_excel(dict):
              if j == 5: #age
                  if x[i, j] == 101:
                      x[i, j] = ""
-                 if x[i, j] == 102:
-                     x[i, j] = ""
-             if j == 6:  # age
+             if j == 6:  # t0
                  if x[i, j] == -1:
                      x[i, j] = ""
-             if j == 8:  # total listening time
-                 if x[i, j] > 60 :
+                 if x[i, j] > 1.0:
                      x[i, j] = ""
+                 # if x[i,6] > x[i,7]:
+                 #     x[i, j] = ""
+             if j == 7:  # total listening time
+                 if x[i, j] > 1.0:
+                     x[i, j] = ""
+                 # if x[i,6] > 0 and x[i, 6] > x[i, 7]:
+                 #     x[i, j] = ""
              if j == 4:  # expr 2 had no faculty, bug fix
                  if x[i,2] == 2:
                      x[i, j] = ""
-             if j in range(3,51):
-                 if x[i,j]==0:
+             if j == (x_size-1):    # normalized total listening time
+                 if x[i, j] < 0.0: # or x[i, j] > 0.5:
+                     x[i, j] = ""
+             if j in range(3,x_size):
+                 if x[i,j]== -1:
                      x[i,j]=""
 
     x=np.insert(x,0,np.array(column_titles),0)
     #print("counter!!!!",count)
-    np.savetxt("C://%PYTHON_HOME%//kerens//data//ALL_DATA_June1.csv", x,'%s', delimiter=",")
+    np.savetxt("ALL_DATA_10_normalized.csv", x,'%s', delimiter=",")
     print(column_titles)
 
 
