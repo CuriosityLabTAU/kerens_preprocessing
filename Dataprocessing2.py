@@ -17,7 +17,7 @@ def extract_filename(full_filename):
     parts = full_filename.split('\\')
     return parts[1]
 
-
+#todo
 
 ############################################################################################
 ####  Initialization- build data structure(reading data from .log files) and row_data   ####
