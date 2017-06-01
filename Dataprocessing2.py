@@ -174,80 +174,101 @@ def build_data_dict(amount_of_data,dict,num_tablet,row_data):
                 #print(current_value['data']['obj'])
 
                 #### GENDER dict[current_tab][file]["personal_info"]['gender']=
-                if current_value['data']['obj'] in ['gender']:
-                    if current_value['data']['comment'] in unicode_gender: # to prevent "pos": "(x,y)" comments
-                        amount_of_data['gender'][current_tab].append(current_value['data']['comment'])
-                        dict[current_tab][file]["personal_info"]['gender'] = current_value['data']['comment']
-
+                try:
+                    if current_value['data']['obj'] in ['gender']:
+                        if current_value['data']['comment'] in ['רכז','הבקנ']: # to prevent "pos": "(x,y)" comments
+                            amount_of_data['gender'][current_tab].append(current_value['data']['comment'])
+                            dict[current_tab][file]["personal_info"]['gender'] = current_value['data']['comment']
+                except:
+                    print(file,"gender")
                 #### EMAIL dict[current_tab][file]["personal_info"]['email']=
                 ## keeps a list of tuples (time stamp,email), will chose the relevent according to latest time stamp
 
-                if current_value['data']['obj'] in ['email']:
-                     time=datetime.strptime(current_value['data']['time'], '%Y_%m_%d_%H_%M_%S_%f')
-                     amount_of_data['email'][current_tab][file].append((time,current_value['data']['comment']))
-                     #print(current_value['data']['comment'],file)
+                try:
+                    if current_value['data']['obj'] in ['email']:
+                         time=datetime.strptime(current_value['data']['time'], '%Y_%m_%d_%H_%M_%S_%f')
+                         amount_of_data['email'][current_tab][file].append((time,current_value['data']['comment']))
+                        #print(current_value['data']['comment'],file)
+                except:
+                    print(file,"email")
 
 
                 #### FACULTY dict[current_tab][file]["personal_info"]['faculty']=
-                if current_value['data']['obj'] in ["faculty"]:
-                    cv_unicode = current_value['data']['comment']
-
-                    if cv_unicode in unicode_faculty:
-                        #print(current_value['data']['comment'])
-                        dict[current_tab][file]["personal_info"]['faculty'] = current_value['data']['comment']
-                        if dict[current_tab][file]["experiment"]== "expr2":
-                            check_faculty.append((file,current_tab,dict[current_tab][file]["experiment"],current_value['data']['comment']))
+                try:
+                    if current_value['data']['obj'] in ["faculty"]:
+                        if current_value['data']['comment'] in ['תויונמא', 'הרבחה יעדמ', 'םייחה יעדמ', 'תואירבו האופר','הסדנה','חורה יעדמ', 'םיטפשמ', 'לוהינ', 'םיקיודמ םיעדמ']:
+                            print(current_value['data']['comment'])
+                            dict[current_tab][file]["personal_info"]['faculty'] = current_value['data']['comment']
+                            if dict[current_tab][file]["experiment"]== "expr2":
+                                check_faculty.append((file,current_tab,dict[current_tab][file]["experiment"],current_value['data']['comment']))
+                except:
+                    print(file,"faculty")
 
                 #### AGE dict[current_tab][file]["personal_info"]['age']=
                 ## keeps a list of tuples (time stamp,age), will chose the relevent according to latest time stamp
-                if current_value['data']['obj'] in ['age']:
-                    time = datetime.strptime(current_value['data']['time'], '%Y_%m_%d_%H_%M_%S_%f')
-                    amount_of_data['age'][current_tab][file].append((time, current_value['data']['comment']))
+                try:
+                    if current_value['data']['obj'] in ['age']:
+                        time = datetime.strptime(current_value['data']['time'], '%Y_%m_%d_%H_%M_%S_%f')
+                        amount_of_data['age'][current_tab][file].append((time, current_value['data']['comment']))
+                except:
+                    print(file,"age")
+
 
                 #### BUTTONS dict[current_tab][file]['buttons']=
-                if current_value['data']['obj'] in ['consent_button','consent_checkbox','final_button']:
-                    time = datetime.strptime(current_value['data']['time'], '%Y_%m_%d_%H_%M_%S_%f')
-                    time2 = datetime.strptime( key, '%Y_%m_%d_%H_%M_%S_%f')
-                    dict[current_tab][file]["buttons"][current_value['data']['obj']] = time
-                    dict[current_tab][file]["buttons"][current_value['data']['obj']+str(2)] = time2 # capture the key as time stamp
-
+                try:
+                    if current_value['data']['obj'] in ['consent_button','consent_checkbox','final_button']:
+                        time = datetime.strptime(current_value['data']['time'], '%Y_%m_%d_%H_%M_%S_%f')
+                        time2 = datetime.strptime( key, '%Y_%m_%d_%H_%M_%S_%f')
+                        dict[current_tab][file]["buttons"][current_value['data']['obj']] = time
+                        dict[current_tab][file]["buttons"][current_value['data']['obj']+str(2)] = time2 # capture the key as time stamp
+                except:
+                    print(file,"buttons")
 
                 #### TO dict[current_tab][file]['t0']=
-                if current_value['data']['obj'] in ['t0']:
-                    time = datetime.strptime(current_value['data']['time'], '%Y_%m_%d_%H_%M_%S_%f')
-                    dict[current_tab][file]["t0"] = time
-                    check_t0.append((file, current_tab, dict[current_tab][file]["experiment"], time))
-                    #print(file, dict[current_tab][file]['t0'])
+                try:
+                    if current_value['data']['obj'] in ['t0']:
+                        time = datetime.strptime(current_value['data']['time'], '%Y_%m_%d_%H_%M_%S_%f')
+                        dict[current_tab][file]["t0"] = time
+                        check_t0.append((file, current_tab, dict[current_tab][file]["experiment"], time))
+                        #print(file, dict[current_tab][file]['t0'])
+                except:
+                    print(file,"t0")
 
                 #### PLAYING TIME dict[current_tab][file]["wav"]= (wav_full_name.WAV: [("play",play_time),("stop",stop_time)...]
                 ## first part - saving playing and stop time
-                if current_value['data']['obj'].lower() in ["art","eng","exc","hum","law","life","man","med","soc"]:
-                    if "pos" not in current_value['data']['comment']:
-                        if current_value['data']['obj'].lower()=="life":
-                            current_value['data']['obj']="lif"
-                        if current_value['data']['obj'].lower()=="exa":
-                            current_value['data']['obj']="exc"
-                        if current_value['data']['comment'].lower() in dict[current_tab][file]['wav'].keys():
-                            #print( current_value['data']['comment'])
-                            dict[current_tab][file]['wav'][current_value['data']['comment'].lower()].append((
-                                current_value['data']['action'],current_value['data']['time']))
-                        else:
-                            dict[current_tab][file]['wav'][current_value['data']['comment'].lower()] = []
-                            dict[current_tab][file]['wav'][current_value['data']['comment'].lower()].append((
-                                current_value['data']['action'],current_value['data']['time']))
-
+                try:
+                    if current_value['data']['obj'].lower() in ["art","eng","exc","hum","law","life","man","med","soc"]:
+                        if "pos" not in current_value['data']['comment']:
+                            if current_value['data']['obj'].lower()=="life":
+                                current_value['data']['obj']="lif"
+                            if current_value['data']['obj'].lower()=="exa":
+                                current_value['data']['obj']="exc"
+                            if current_value['data']['comment'].lower() in dict[current_tab][file]['wav'].keys():
+                                #print( current_value['data']['comment'])
+                                dict[current_tab][file]['wav'][current_value['data']['comment'].lower()].append((
+                                    current_value['data']['action'],current_value['data']['time']))
+                            else:
+                                dict[current_tab][file]['wav'][current_value['data']['comment'].lower()] = []
+                                dict[current_tab][file]['wav'][current_value['data']['comment'].lower()].append((
+                                    current_value['data']['action'],current_value['data']['time']))
+                except:
+                    print(file,"playing time")
                 #### CURIOSITY QUESTIONS dict[current_tab][file]['"curiosity_ques"']=[0,0,0,0,0,0,0,0,0,0]
-                if "q" in current_value['data']['obj']:
-                    ques = int(current_value['data']['obj'][1:3])
-                    ans = current_value['data']['obj'][7]
-                    dict[current_tab][file]['curiosity_ques'][ques-1]=ans
-
+                try:
+                    if "q" in current_value['data']['obj']:
+                        ques = int(current_value['data']['obj'][1:3])
+                        ans = current_value['data']['obj'][7]
+                        dict[current_tab][file]['curiosity_ques'][ques-1]=ans
+                except:
+                    print(file,"questions")
 
                 #### LEARNING QUESTIONS dict[current_tab][file]["learning_ques"]: {"questions":[],(_,_),(_,_)}
-                if "correct" in current_value['data']['obj'] or "wrong" in current_value['data']['obj']:
-                    if current_value['data']['obj'] not in dict[current_tab][file]["learning_ques"]["questions"]:
-                          dict[current_tab][file]["learning_ques"]["questions"].append(current_value['data']['obj'])
-
+                try:
+                    if "correct" in current_value['data']['obj'] or "wrong" in current_value['data']['obj']:
+                        if current_value['data']['obj'] not in dict[current_tab][file]["learning_ques"]["questions"]:
+                              dict[current_tab][file]["learning_ques"]["questions"].append(current_value['data']['obj'])
+                except:
+                    print(file,"gender")
 
             #### EMAIL and AGE #2, needs a special process cause the data is saved every time typing
             #    for Exmaple : 1. ker 2. keren.bentob 3. keren.bentov@gmai 4. keren.bentov@gmail.com
@@ -419,7 +440,7 @@ def data_processing(num_tablet,dict,faculty,faculty_en_to_heb ):
                         dict[current_tab][file]['wav_sorted'][datetime.strptime(p_s[1],'%Y_%m_%d_%H_%M_%S_%f')]=wav[6:9]
 
 
-    x = [["" for i in range(10)] for j in range(587)]
+    x = [["" for i in range(10)] for j in range(945)]
     r=0
     subject_with_faculty=0
     subject_with_faculty_equal_1st_wav = 0
@@ -810,7 +831,7 @@ def create_excel(dict):
     age_list=[-1,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,
               31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,
               59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,
-              87,88,89,90,91,92,93,94,95,96,97,98,99,100,""]
+              87,88,89,90,91,92,93,94,95,96,97,98,99,100,185,""]
     for i in age_list:
        age_list[age_list.index(i)]=str(i)
 
