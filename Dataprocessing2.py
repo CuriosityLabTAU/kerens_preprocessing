@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+from path_names import *
 import glob, os
 import ast
 from datetime import datetime
@@ -80,7 +81,7 @@ def initial(num_tablet, experiments,path,faculty):
                                                     # containing a Python literal or container display
 
             for key in data1.keys():
-                if key[5:10] == "02_03":
+                if key[5:10] == "02_03" or key[5:10] == '05_24':
                     data1[key]["data"] = json.loads(data1[key]["data"])['log'] #ast.literal_eval(data1[key]["data"])["log"]
                     #print(data1[key]["data"],"expr3")
                 else:
@@ -96,7 +97,7 @@ def initial(num_tablet, experiments,path,faculty):
 ####            Mark out of data files according to date              ######
 ############################################################################
 def out_of_data(num_tablet,amount_of_data,experiments,dict):
-    file_start = len('curiosity_tabs_1_2_3_4_5/tab1\\')
+    file_start = len(path) + 2          # removes also tablet number and //
     for i in range(num_tablet):
         current_tab = 'Tab'+str(i+1)
         amount_of_data['relevent_data_per_tab'][current_tab] = {}
@@ -142,8 +143,7 @@ def build_data_dict(amount_of_data,dict,num_tablet,row_data):
     amount_of_data['email'] = {}
     amount_of_data['faculty'] = {}
     amount_of_data['age'] = {}
-    path2_face_expression = "C://Users//kerenbt//Downloads//%PYTHON_HOME%//projects//open_day_2//curiosity_tabs_1_2_3_4_5//affectiva_subject_stats.json"
-    path2_face_expression = "curiosity_tabs_1_2_3_4_5//affectiva_subject_stats.json"
+    path2_face_expression = analysis_path + "affectiva_subject_stats.json"
     with open(path2_face_expression) as face_data:
         faces_data = json.load(face_data)
     #pprint(faces_data)
@@ -176,7 +176,7 @@ def build_data_dict(amount_of_data,dict,num_tablet,row_data):
                 #### GENDER dict[current_tab][file]["personal_info"]['gender']=
                 try:
                     if current_value['data']['obj'] in ['gender']:
-                        if current_value['data']['comment'] in ['רכז','הבקנ']: # to prevent "pos": "(x,y)" comments
+                        if current_value['data']['comment'] in unicode_gender: # to prevent "pos": "(x,y)" comments
                             amount_of_data['gender'][current_tab].append(current_value['data']['comment'])
                             dict[current_tab][file]["personal_info"]['gender'] = current_value['data']['comment']
                 except:
@@ -196,7 +196,7 @@ def build_data_dict(amount_of_data,dict,num_tablet,row_data):
                 #### FACULTY dict[current_tab][file]["personal_info"]['faculty']=
                 try:
                     if current_value['data']['obj'] in ["faculty"]:
-                        if current_value['data']['comment'] in ['תויונמא', 'הרבחה יעדמ', 'םייחה יעדמ', 'תואירבו האופר','הסדנה','חורה יעדמ', 'םיטפשמ', 'לוהינ', 'םיקיודמ םיעדמ']:
+                        if current_value['data']['comment'] in unicode_faculty:
                             print(current_value['data']['comment'])
                             dict[current_tab][file]["personal_info"]['faculty'] = current_value['data']['comment']
                             if dict[current_tab][file]["experiment"]== "expr2":
@@ -826,7 +826,7 @@ def create_excel(dict):
     faculty_list = [unicode(x, 'utf-8') for x in faculty_list_non_unicode]
     gender_list_non_unicode = ["-1",'רכז','הבקנ']
     gender_list = [unicode(x, 'utf-8') for x in gender_list_non_unicode]
-    experiments_list = [None,"expr1","expr2","expr3"]
+    experiments_list = [None,"expr1","expr2","expr3","expr4"]
     #out_of_data_list=["","not at hour","not at day","curiosity_questions_not_full_amount, 1-9","curiosity_questions_is_empty, 0"]
     age_list=[-1,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,
               31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,
@@ -1087,7 +1087,8 @@ def create_excel(dict):
 
     x=np.insert(x,0,np.array(column_titles),0)
     #print("counter!!!!",count)
-    np.savetxt("ALL_DATA_10_normalized.csv", x,'%s', delimiter=",")
+
+    np.savetxt(analysis_path + "ALL_DATA_10_normalized.csv", x,'%s', delimiter=",")
     print(column_titles)
 
 

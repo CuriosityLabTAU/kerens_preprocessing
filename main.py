@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+from path_names import *
 from Dataprocessing2 import *
 
 # dict of Experiments : {expr#:(Experiment_date,[Experiment_hours list]),...}
@@ -9,7 +9,7 @@ experiments = {"expr1": ('2016_02_05', ['08', '09', '10', '11', '12']), #
                "expr3": ('2017_02_03', ['08','09', '10', '11', '12']), #8-13
                "expr4": ('2017_05_24', ['13','14', '15', '16', '17'])} #14-18
 num_tablet = 5
-path = "C://%PYTHON_HOME%//kerens//data//Tab"
+
 faculty = ["art", "eng", "exa", "hum", "law", "lif", "man", "med", "soc"]
 faculty_en_to_heb = {"art":"תויונמא", "eng":"הסדנה", "exa":"םיקיודמ םיעדמ", "hum":"חורה יעדמ", "law":"םיטפשמ", "lif":"םייחה יעדמ", "man":"לוהינ","med":"תואירבו האופר", "soc":"הרבחה יעדמ"}
 
