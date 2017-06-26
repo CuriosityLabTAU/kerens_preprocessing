@@ -197,7 +197,7 @@ def build_data_dict(amount_of_data,dict,num_tablet,row_data):
                 try:
                     if current_value['data']['obj'] in ["faculty"]:
                         if current_value['data']['comment'] in unicode_faculty:
-                            print(current_value['data']['comment'])
+                            #print(current_value['data']['comment'])
                             dict[current_tab][file]["personal_info"]['faculty'] = current_value['data']['comment']
                             if dict[current_tab][file]["experiment"]== "expr2":
                                 check_faculty.append((file,current_tab,dict[current_tab][file]["experiment"],current_value['data']['comment']))
@@ -227,10 +227,12 @@ def build_data_dict(amount_of_data,dict,num_tablet,row_data):
                 #### TO dict[current_tab][file]['t0']=
                 try:
                     if current_value['data']['obj'] in ['t0']:
-                        time = datetime.strptime(current_value['data']['time'], '%Y_%m_%d_%H_%M_%S_%f')
-                        dict[current_tab][file]["t0"] = time
+                        t0_times = current_value['data']['comment'].split(',')
+                        dict[current_tab][file]["t0"] = datetime.strptime(t0_times[1], '%Y_%m_%d_%H_%M_%S_%f') - datetime.strptime(t0_times[0], '%Y_%m_%d_%H_%M_%S_%f')
                         check_t0.append((file, current_tab, dict[current_tab][file]["experiment"], time))
+                        #print(dict[current_tab][file]["t0"],"from log", file)
                         #print(file, dict[current_tab][file]['t0'])
+
                 except:
                     print(file,"t0")
 
@@ -455,9 +457,11 @@ def data_processing(num_tablet,dict,faculty,faculty_en_to_heb ):
                 #print(type(dict[current_tab][file]['wav_sorted']))
                 dict[current_tab][file]['wav_sorted']=sorted(dict[current_tab][file]['wav_sorted'].items(),key=operator.itemgetter(0)) # seconds - problems with seconds
                 #dict[current_tab][file]["t0"] =datetime.strptime(dict[current_tab][file]['wav_sorted'][0][0], '%Y_%m_%d_%H_%M_%S_%f') - datetime.strptime(dict[current_tab][file]['buttons']['consent_button'], '%Y_%m_%d_%H_%M_%S_%f')
-                if dict[current_tab][file]['buttons']:
-                    dict[current_tab][file]["t0"] =dict[current_tab][file]['wav_sorted'][0][0] - dict[current_tab][file]['buttons']['consent_button']
-                    print(file,dict[current_tab][file]["t0"],"t0")
+                if dict[current_tab][file]['buttons'] and dict[current_tab][file]["t0"] == -1:
+                    dict[current_tab][file]["t0"] = dict[current_tab][file]['wav_sorted'][0][0] - \
+                                                    dict[current_tab][file]['buttons']['consent_button']
+                    #print(dict[current_tab][file]["t0"], "consent_button", file)
+                    #print(file,dict[current_tab][file]["t0"],"t0")
                 #wav_sorted2 contain just the Fac name [eng,med,exa..]
                 dict[current_tab][file]['wav_sorted2'] = []
                 for wav in dict[current_tab][file]['wav_sorted']:
@@ -507,9 +511,9 @@ def data_processing(num_tablet,dict,faculty,faculty_en_to_heb ):
    #     print(len(i))
     print(x.shape)
     #print(x[0])
-    print(x)
-    print(len(x))
-    print(len(x[0]))
+    #print(x)
+    #print(len(x))
+    #print(len(x[0]))
 
     #np.savetxt("C://Users//kerenbt//Downloads//%PYTHON_HOME%//projects//open_day_2//multi.csv", np.matrix(e_multi_matrix),'%s', delimiter=",")
 
@@ -519,7 +523,7 @@ def data_processing(num_tablet,dict,faculty,faculty_en_to_heb ):
     # calculating the Entropy(transfers matrix) dict[current_tab][file]["trans_matrix"]["count"}=
                                                 #dict[current_tab][file]["trans_matrix"]["prop"}=
 
-    n_of_more_than_3_wavs=0
+    n_of_more_than_4_wavs=0
     for i in range(num_tablet):
         current_tab = 'Tab'+str(i+1)
         for file in dict[current_tab].keys():
@@ -544,7 +548,7 @@ def data_processing(num_tablet,dict,faculty,faculty_en_to_heb ):
             dict[current_tab][file]['trans_matrix']['num_transitions'] = num_transitions
             sum_y=np.sum(y)
             if sum_y>4:
-                n_of_more_than_3_wavs+=1
+                n_of_more_than_4_wavs+=1
             # CHANGED
             if num_transitions > 1:
                 dict[current_tab][file]['trans_matrix']['prop'] = np.divide(y,sum_y)
@@ -578,13 +582,10 @@ def data_processing(num_tablet,dict,faculty,faculty_en_to_heb ):
                 n_q+=1
                 stre_big.append(dict[current_tab][file]["curiosity_ques_stre"])
                 embr_big.append(dict[current_tab][file]["curiosity_ques_embr"])
-
             if dict[current_tab][file]['trans_matrix']['prop'] is not None: #had more than 3 wavs
                 for x in np.nditer(dict[current_tab][file]['trans_matrix']['prop']):
                     if x!=0:
-                        #print(x,"log",np.log2(x)*(x))
                         sum_prop -=  (np.log2(x))*(x)
-                        #print(sum_prop)
                 # --- normalization of transition matrix = log2(1/num_transitions) ---
                 # --- norm_entropy ==> high all transitions (chaos), low very ordered
                 p_normalization = 1.0 / float(dict[current_tab][file]['trans_matrix']['num_transitions'])
@@ -593,17 +594,14 @@ def data_processing(num_tablet,dict,faculty,faculty_en_to_heb ):
                 faculties_num=0
                 for x in dict[current_tab][file]['fac_heard']:  #check how many diffrent faculties wav has benn listened
                     if dict[current_tab][file]['fac_heard'][x]>0:
-                        #print(dict[current_tab][file]['fac_prop'][x],x,file)
                         faculties_num+=1
-                #print("sum",dict[current_tab][file]['trans_matrix']['e_trans'])
-                #print(file,faculties_num,np.log2(faculties_num))
                 faculties_num_small.append(np.log2(faculties_num))
                 total_small.append(dict[current_tab][file]["listen_t"]["tot"])
                 e_m_small.append(dict[current_tab][file]["e_multidis"])
                 stre.append(dict[current_tab][file]["curiosity_ques_stre"]) #even for embracing and odd for stretching
                 embr.append(dict[current_tab][file]["curiosity_ques_embr"])
                 e_t.append((-1)*sum_prop)
-    #########print('n_of_more_than_3_wavs',n_of_more_than_3_wavs,'n_q',n_q)
+    #########print('n_of_more_than_4_wavs',n_of_more_than_4_wavs,'n_q',n_q)
     return (total_time,e_m,e_t,e_m_small,total_small,e_m_big,total_big,embr_big,stre_big,embr,stre,faculties_num_small)
 
 
@@ -614,7 +612,7 @@ def data_processing(num_tablet,dict,faculty,faculty_en_to_heb ):
 def measures_control(dict,num_tablet,faculty):
     dict2=dict
     z= []
-    n_of_more_than_3_wavs = 0
+    n_of_more_than_4_wavs = 0
 
     for i in range(num_tablet):
         current_tab = 'Tab' + str(i + 1)
@@ -638,7 +636,7 @@ def measures_control(dict,num_tablet,faculty):
                 dict2[current_tab][file]['trans_matrix']['count'] = y
                 sum_y = np.sum(y)
                 if sum_y > 4:
-                    n_of_more_than_3_wavs += 1
+                    n_of_more_than_4_wavs += 1
                     dict2[current_tab][file]['trans_matrix']['prop'] = np.divide(y, sum_y)
 
                 sum_prop = 0
@@ -665,7 +663,7 @@ def measures_control(dict,num_tablet,faculty):
                 print(dict2[current_tab][file]['trans_matrix']['e_trans'])
                 print("z_value")
                 print(dict2[current_tab][file]['trans_matrix']['z_value'])'''
-    #print("n_of_more_than_3_wavs",n_of_more_than_3_wavs/100)
+    #print("n_of_more_than_4_wavs",n_of_more_than_4_wavs/100)
     ###########print("z_e_trans",z)
     ###########print("lenz z_e_trans",len(z))
 
@@ -708,7 +706,7 @@ def graphs(total_time,e_m,e_t,e_m_small,total_small,e_m_big,total_big,embr_big,s
     plt.show()
 
     ##############################################################
-    #####  e_trans VS e_multi(small - only more_than_3_wavs) #####
+    #####  e_trans VS e_multi(small - only more_than_4_wavs) #####
     ##############################################################
     plt.plot(e_t,e_m_small,'ro')
     plt.xlabel('e_trans')
@@ -716,7 +714,7 @@ def graphs(total_time,e_m,e_t,e_m_small,total_small,e_m_big,total_big,embr_big,s
     plt.show()
 
     ##########################################################################
-    ##### e_trans VS total listening time(small - only more_than_3_wavs) #####
+    ##### e_trans VS total listening time(small - only more_than_4_wavs) #####
     ##########################################################################
     plt.plot(e_t,total_small,'ro')
     plt.xlabel('e_trans')
@@ -725,7 +723,7 @@ def graphs(total_time,e_m,e_t,e_m_small,total_small,e_m_big,total_big,embr_big,s
 
 
     #########################################################################
-    #### e_multi VS total listening time(all, not only more_than_3_wavs) ####
+    #### e_multi VS total listening time(all, not only more_than_4_wavs) ####
     #########################################################################
     plt.plot(e_m_big,total_big,'ro')
     plt.xlabel('e_multi')
@@ -734,7 +732,7 @@ def graphs(total_time,e_m,e_t,e_m_small,total_small,e_m_big,total_big,embr_big,s
 
 
     #########################################################################
-    #### embracing_all VS stretching_all(all, not only more_than_3_wavs) ####
+    #### embracing_all VS stretching_all(all, not only more_than_4_wavs) ####
     #########################################################################
     plt.plot(embr_big,stre_big,'ro')
     plt.xlabel('embracing_all')
@@ -742,7 +740,7 @@ def graphs(total_time,e_m,e_t,e_m_small,total_small,e_m_big,total_big,embr_big,s
     plt.show()
 
     ########################################################
-    #### embracing VS stretching(only more_than_3_wavs) ####
+    #### embracing VS stretching(only more_than_4_wavs) ####
     ########################################################
     plt.plot(embr,stre,'ro')
     plt.xlabel('embracing')
@@ -750,7 +748,7 @@ def graphs(total_time,e_m,e_t,e_m_small,total_small,e_m_big,total_big,embr_big,s
     plt.show()
 
     #########################################################################
-    #### embracing VS tot listening time(small - only more_than_3_wavs)  ####
+    #### embracing VS tot listening time(small - only more_than_4_wavs)  ####
     #########################################################################
 
     plt.plot(embr,total_small,'ro')
@@ -759,7 +757,7 @@ def graphs(total_time,e_m,e_t,e_m_small,total_small,e_m_big,total_big,embr_big,s
     plt.show()
 
     #########################################################################
-    #### stretching VS tot listening time(small - only more_than_3_wavs)  ###
+    #### stretching VS tot listening time(small - only more_than_4_wavs)  ###
     #########################################################################
     plt.plot(stre,total_small,'ro')
     plt.xlabel('stretching')
@@ -767,7 +765,7 @@ def graphs(total_time,e_m,e_t,e_m_small,total_small,e_m_big,total_big,embr_big,s
     plt.show()
 
     ##############################################################
-    #### embracing VS e_multi(small - only more_than_3_wavs)  ####
+    #### embracing VS e_multi(small - only more_than_4_wavs)  ####
     ##############################################################
     plt.plot(embr,e_m_small,'ro')
     plt.xlabel('embracing')
@@ -775,7 +773,7 @@ def graphs(total_time,e_m,e_t,e_m_small,total_small,e_m_big,total_big,embr_big,s
     plt.show()
 
     ##############################################################
-    #### stretching VS e_multi(small - only more_than_3_wavs)  ###
+    #### stretching VS e_multi(small - only more_than_4_wavs)  ###
     ##############################################################
     plt.plot(stre,e_m_small,'ro')
     plt.xlabel('stretching')
@@ -783,7 +781,7 @@ def graphs(total_time,e_m,e_t,e_m_small,total_small,e_m_big,total_big,embr_big,s
     plt.show()
 
     ##############################################################
-    #### embracing VS e_trans(small - only more_than_3_wavs)  ####
+    #### embracing VS e_trans(small - only more_than_4_wavs)  ####
     ##############################################################
     plt.plot(embr,e_t,'ro')
     plt.xlabel('embracing')
@@ -791,7 +789,7 @@ def graphs(total_time,e_m,e_t,e_m_small,total_small,e_m_big,total_big,embr_big,s
     plt.show()
 
     ##############################################################
-    #### stretching VS e_trans(small - only more_than_3_wavs)  ####
+    #### stretching VS e_trans(small - only more_than_4_wavs)  ####
     ##############################################################
     plt.plot(stre,e_t,'ro')
     plt.xlabel('stretching')
@@ -801,7 +799,7 @@ def graphs(total_time,e_m,e_t,e_m_small,total_small,e_m_big,total_big,embr_big,s
 
 
     ##################################################################################
-    #### stretching VS Log2(num of faculties wav)(small - only more_than_3_wavs)  ####
+    #### stretching VS Log2(num of faculties wav)(small - only more_than_4_wavs)  ####
     ##################################################################################
     plt.plot(stre,faculties_num_small,'ro')
     plt.xlabel('stretching')
@@ -809,7 +807,7 @@ def graphs(total_time,e_m,e_t,e_m_small,total_small,e_m_big,total_big,embr_big,s
     plt.show()
 
     #################################################################################
-    #### embracing VS Log2(num of faculties wav)(small - only more_than_3_wavs)  ####
+    #### embracing VS Log2(num of faculties wav)(small - only more_than_4_wavs)  ####
     #################################################################################
     plt.plot(embr,faculties_num_small,'ro')
     plt.xlabel('embracing')
@@ -905,10 +903,10 @@ def create_excel(dict):
 
             # buttons   --- needed???
 
-            #t0  - normalized to [0,120] ==> [0, 1]
+            #t0  - normalized to [0,60] ==> [0, 1]
             if v2['t0']!= -1:
                 x[subject_number, c]= (v2['t0'].seconds)
-                x[subject_number, c] /= 120.0
+                x[subject_number, c] /= 60.0
             else:
                 x[subject_number, c] = -1 #(v2['t0'])
 
@@ -918,7 +916,7 @@ def create_excel(dict):
                 column_titles.append('t0')
 
             #total listenning time
-            x[subject_number, c] = float(v2['listen_t']['tot']) / 120.0
+            x[subject_number, c] = float(v2['listen_t']['tot']) / 60.0
             c += 1
             if subject_number == 0:
                 column_titles.append('total listenning time')
@@ -929,9 +927,9 @@ def create_excel(dict):
                 x[subject_number, c] = float(q)
                 c += 1
                 if i in [16,18] and q!=0:
-                    print(i, q)
+                    #print(i, q)
                     x[subject_number, c] = 6-float(q)
-                    print(x[subject_number, c] )
+                    #print(x[subject_number, c] )
 
                 if subject_number == 0:
                     column_titles.append('curiosity question ' + str(i+1))
@@ -1045,10 +1043,10 @@ def create_excel(dict):
 
             # normalized total listenning time
             if v2['t0'] != -1:
-                x[subject_number, c] = float(v2['listen_t']['tot']) / (120.0 - float(v2['t0'].seconds))
+                x[subject_number, c] = float(v2['listen_t']['tot']) / (60.0 - float(v2['t0'].seconds))
             else:
                 x[subject_number, c] = -1
-                # x[subject_number, c] = float(v2['listen_t']['tot']) / (120.0 - float(v2['t0']))
+                # x[subject_number, c] = float(v2['listen_t']['tot']) / (60.0 - float(v2['t0']))
             c += 1
             if subject_number == 0:
                 column_titles.append('normalized total listenning time')
@@ -1062,6 +1060,8 @@ def create_excel(dict):
          for j in range(x.shape[1]):  #column index
              if j == 5: #age
                  if x[i, j] == 101:
+                     x[i, j] = ""
+                 if x[i, j] == 102:
                      x[i, j] = ""
              if j == 6:  # t0
                  if x[i, j] == -1:
@@ -1088,7 +1088,7 @@ def create_excel(dict):
     x=np.insert(x,0,np.array(column_titles),0)
     #print("counter!!!!",count)
 
-    np.savetxt(analysis_path + "ALL_DATA_10_normalized.csv", x,'%s', delimiter=",")
+    np.savetxt(analysis_path + "ALL_DATA_normalized.csv", x,'%s', delimiter=",")
     print(column_titles)
 
 

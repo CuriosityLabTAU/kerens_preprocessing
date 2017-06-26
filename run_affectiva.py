@@ -43,7 +43,7 @@ def game_stats(aff_list, stat_type):
     return result
 
 
-the_dates = [['2016', '05', '25'], ['2016', '02', '05'], ['2017', '02', '03']]
+the_dates = [['2016', '05', '25'], ['2016', '02', '05'], ['2017', '02', '03'],['2017','05','24']]
 
 print('--- Affectiva ---')
 aff_data = load_affectiva(the_path, the_dates)
