@@ -62,7 +62,7 @@ def initial(num_tablet, experiments,path,faculty):
                                        "curiosity_ques":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
                                        "curiosity_ques_stre": -1,
                                        "curiosity_ques_embr": -1,
-                                       "learning_ques": {"questions":[]},
+                                       "learning_ques": {"questions":[],"ques-time":[] ,"learning %":-1},
                                        'trans_matrix':
                                                         {'count':0,
                                                          'prop':0,
@@ -268,9 +268,12 @@ def build_data_dict(amount_of_data,dict,num_tablet,row_data):
                 try:
                     if "correct" in current_value['data']['obj'] or "wrong" in current_value['data']['obj']:
                         if current_value['data']['obj'] not in dict[current_tab][file]["learning_ques"]["questions"]:
-                              dict[current_tab][file]["learning_ques"]["questions"].append(current_value['data']['obj'])
+                            dict[current_tab][file]["learning_ques"]["questions"].append(current_value['data']['obj'])
+                            dict[current_tab][file]["learning_ques"]["ques-time"].append(
+                                (datetime.strptime(current_value['data']['time'], '%Y_%m_%d_%H_%M_%S_%f'),current_value['data']['obj'].split(",")[0],current_value['data']['obj'].split(",")[1]))
+                            dict[current_tab][file]["learning_ques"]["ques-time"] = sorted(dict[current_tab][file]["learning_ques"]["ques-time"], key=lambda x: x[0])
                 except:
-                    print(file,"gender")
+                    print(file,"LEARNING")
 
             #### EMAIL and AGE #2, needs a special process cause the data is saved every time typing
             #    for Exmaple : 1. ker 2. keren.bentob 3. keren.bentov@gmai 4. keren.bentov@gmail.com
@@ -323,25 +326,50 @@ def build_data_dict(amount_of_data,dict,num_tablet,row_data):
 
 
             #### CURIOSITY & LEARNING QUESTIONS  #2    dict[current_tab][file]["curiosity_ques_stre"]=  /   dict[current_tab][file]["curiosity_ques_embr"]=
-            # split into faculty_wav# and wrong\correct answer
+            if len(dict[current_tab][file]["learning_ques"]["ques-time"])>1:
+                orig=dict[current_tab][file]["learning_ques"]["ques-time"]
+            for i in dict[current_tab][file]["learning_ques"]["ques-time"]:
+                for j in dict[current_tab][file]["learning_ques"]["ques-time"]:
+                    if i[2]==j[2] and i[0]!=j[0]:
+                        if i[0]>j[0]:
+                            dict[current_tab][file]["learning_ques"]["ques-time"].remove(j)
+                            #print(i, j, "2nd should bye")
+                            #print(orig)
 
-            for learning_q in dict[current_tab][file]["learning_ques"]['questions']:
-                cor_or_wro, fac =learning_q.split(",")[0],learning_q.split(",")[1]
-                if fac=="life":
-                    fac="lif"
-                dict[current_tab][file]["learning_ques"][fac]=cor_or_wro
-            #print(file,dict[current_tab][file]["learning_ques"])
+                        else:
+                            dict[current_tab][file]["learning_ques"]["ques-time"].remove(i)
+                            #print(i,j,"first should bye")
+                            #print(orig)
+            correct=0
+            if dict[current_tab][file]["learning_ques"]["ques-time"]:
+                for i in dict[current_tab][file]["learning_ques"]["ques-time"]:
+                    if i[1]=="correct":
+                        print(i)
+                        correct+=1
+                dict[current_tab][file]["learning_ques"]["learning %"] = float(correct)/ float(len(dict[current_tab][file]["learning_ques"]["ques-time"]))
+
+
 
             dict[current_tab][file]["curiosity_ques_embr"] = sum(
                                                             int(dict[current_tab][file]['curiosity_ques'][j]) for j in [1, 3, 5, 7, 9])
             dict[current_tab][file]["curiosity_ques_stre"] = sum(
                                                             int(dict[current_tab][file]['curiosity_ques'][j]) for j in [0, 2, 4, 6, 8])
 
-            BFI_sign = [1,1,1,1,1,1,-1,1,-1,1]
-            dict[current_tab][file]["BFI"] = 0.0
+            #BFI_sign = [1,1,1,1,1,1,-1,1,-1,1]
+            dict[current_tab][file]["BFI"] = -1
+
             for j in [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]:
-                dict[current_tab][file]["BFI"] += float(dict[current_tab][file]['curiosity_ques'][j]) * float(BFI_sign[j-10])
-            dict[current_tab][file]["BFI"] /= 10.0
+                if dict[current_tab][file]['curiosity_ques'][j]!=0:
+                    if j==16 or j==18:
+                        dict[current_tab][file]["BFI"] += 6-float(dict[current_tab][file]['curiosity_ques'][j])
+                        #print("-1",dict[current_tab][file]["BFI"],float(dict[current_tab][file]['curiosity_ques'][j]),file)
+                    else:
+                        dict[current_tab][file]["BFI"] += float(dict[current_tab][file]['curiosity_ques'][j])
+                        #print("1", dict[current_tab][file]["BFI"],float(dict[current_tab][file]['curiosity_ques'][j]),file)
+            if dict[current_tab][file]["BFI"] != -1:
+                dict[current_tab][file]["BFI"] -= 10.0
+                dict[current_tab][file]["BFI"] /= 40.0
+                #print("tot", dict[current_tab][file]["BFI"],file)
 
             #print("embr", dict[current_tab][file]["curiosity_ques_embr"], "stre",
                 #dict[current_tab][file]["curiosity_ques_stre"])
@@ -470,11 +498,12 @@ def data_processing(num_tablet,dict,faculty,faculty_en_to_heb ):
                 #print( faculty_en_to_heb[dict[current_tab][file]['first_wav_faculty']], dict[current_tab][file]['personal_info']['faculty'])
                 if dict[current_tab][file]['personal_info']['faculty'] != -1:
                     subject_with_faculty+=1
-                if faculty_en_to_heb[dict[current_tab][file]['first_wav_faculty']] == dict[current_tab][file]['personal_info']['faculty']:
+
+                '''if faculty_en_to_heb[dict[current_tab][file]['first_wav_faculty']] == dict[current_tab][file]['personal_info']['faculty']:
                     dict[current_tab][file]['first_faculty_is_the_same'] = 1
                     subject_with_faculty_equal_1st_wav+=1
                 else:
-                    dict[current_tab][file]['first_faculty_is_the_same'] = 0
+                    dict[current_tab][file]['first_faculty_is_the_same'] = 0'''
                 #print(dict[current_tab][file]['first_faculty_is_the_same'], faculty_en_to_heb[dict[current_tab][file]['first_wav_faculty']], dict[current_tab][file]['personal_info']['faculty'])
 
                 c = 0
@@ -840,7 +869,7 @@ def create_excel(dict):
             number_of_subjects += 1
     print('number_of_subjects: ', number_of_subjects)
 
-    x_size = 52 + 2*len(emotion_list) + 1
+    x_size = 53 + 2*len(emotion_list) + 1
     x = np.ndarray((number_of_subjects, x_size)).astype(object)
     column_titles = []   #columns_titles
     subject_number = -1  #columns_amount
@@ -909,8 +938,6 @@ def create_excel(dict):
                 x[subject_number, c] /= 60.0
             else:
                 x[subject_number, c] = -1 #(v2['t0'])
-
-
             c += 1
             if subject_number == 0:
                 column_titles.append('t0')
@@ -997,29 +1024,28 @@ def create_excel(dict):
                 column_titles.append('Multi discipline entropy')
 
             #learning questions
-            temp_c = c
             q_num=0
-            for i in v2["learning_ques"]:
-                if i!="questions":
-                    q_num += 1
-                    x[subject_number, c] = str(i)
-                    x[subject_number, c+1] = str(v2["learning_ques"][i])
-                    # print("in",str(i)+","+str(v2["learning_ques"][i]))
-                    #print("c",c,"q_num",q_num,"cell",x[subject_number, c])
-                    c += 2
-                # else:
-                    # print(v2["learning_ques"],"out")
-                    #x[subject_number, c] = 0
+            if v2["learning_ques"]["ques-time"]:
+                for i in v2["learning_ques"]["ques-time"]:
+                    x[subject_number, c+q_num] = str(i[2])
+                    x[subject_number, c+q_num+1] = str(i[1])
+                    q_num += 2
+
             if subject_number == 0:
                 for j in range(4):                                    # 4 or 5
                     column_titles.append('learning ' + str(j+1))
                     column_titles.append('learning ' + str(j + 1) + "- answer")
-                    #print('learning ' + str(j+1))
-            c = temp_c + 8
+            c +=8
+
+            x[subject_number, c] =  float(v2["learning_ques"]["learning %"])
+            c += 1
+            if subject_number == 0:
+                column_titles.append('learning %')
+
 
             # BFI - normalized [0.0, 1.0]
             x[subject_number, c] = float(v2["BFI"])
-            x[subject_number, c] /= 5.0
+            #x[subject_number, c] /= 5.0
             c += 1
             if subject_number == 0:
                 column_titles.append('BFI')
@@ -1073,7 +1099,10 @@ def create_excel(dict):
              if j == 7:  # total listening time
                  if x[i, j] > 1.0:
                      x[i, j] = ""
-                 # if x[i,6] > 0 and x[i, 6] > x[i, 7]:
+             if j in [28,29,30]:  # CEI ,STR,EMR,TOT
+                 if x[i, j] < 0.0:
+                     x[i, j] = ""
+             # if x[i,6] > 0 and x[i, 6] > x[i, 7]:
                  #     x[i, j] = ""
              if j == 4:  # expr 2 had no faculty, bug fix
                  if x[i,2] == 2:
@@ -1084,6 +1113,9 @@ def create_excel(dict):
              if j in range(3,x_size):
                  if x[i,j]== -1:
                      x[i,j]=""
+             if j == 52:  # BFI
+                if x[i, j] < 0.0:
+                    x[i, j] = ""
 
     x=np.insert(x,0,np.array(column_titles),0)
     #print("counter!!!!",count)
