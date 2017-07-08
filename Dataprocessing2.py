@@ -344,7 +344,7 @@ def build_data_dict(amount_of_data,dict,num_tablet,row_data):
             if dict[current_tab][file]["learning_ques"]["ques-time"]:
                 for i in dict[current_tab][file]["learning_ques"]["ques-time"]:
                     if i[1]=="correct":
-                        print(i)
+                        #print(i)
                         correct+=1
                 dict[current_tab][file]["learning_ques"]["learning %"] = float(correct)/ float(len(dict[current_tab][file]["learning_ques"]["ques-time"]))
 
@@ -486,8 +486,10 @@ def data_processing(num_tablet,dict,faculty,faculty_en_to_heb ):
                 dict[current_tab][file]['wav_sorted']=sorted(dict[current_tab][file]['wav_sorted'].items(),key=operator.itemgetter(0)) # seconds - problems with seconds
                 #dict[current_tab][file]["t0"] =datetime.strptime(dict[current_tab][file]['wav_sorted'][0][0], '%Y_%m_%d_%H_%M_%S_%f') - datetime.strptime(dict[current_tab][file]['buttons']['consent_button'], '%Y_%m_%d_%H_%M_%S_%f')
                 if dict[current_tab][file]['buttons'] and dict[current_tab][file]["t0"] == -1:
+
                     dict[current_tab][file]["t0"] = dict[current_tab][file]['wav_sorted'][0][0] - \
                                                     dict[current_tab][file]['buttons']['consent_button']
+                    #print(dict[current_tab][file]['experiment'],dict[current_tab][file]['wav_sorted'][0][0],dict[current_tab][file]['buttons']['consent_button'], "T0")
                     #print(dict[current_tab][file]["t0"], "consent_button", file)
                     #print(file,dict[current_tab][file]["t0"],"t0")
                 #wav_sorted2 contain just the Fac name [eng,med,exa..]
@@ -513,20 +515,6 @@ def data_processing(num_tablet,dict,faculty,faculty_en_to_heb ):
                     c+=1
                 r+=1
 
-                '''#T0 - alternative
-                #print(type(dict[current_tab][file]['wav_sorted']),dict[current_tab][file]['wav_sorted'])
-                if dict[current_tab][file]['buttons'] and dict[current_tab][file]['t0']==-1:
-                    #print(dict[current_tab][file]['t0'],'before')
-
-                    #print(dict[current_tab][file]["buttons"]['consent_button'],dict[current_tab][file]['wav_sorted'][0][0],"***")
-                    dict[current_tab][file]['t0']= dict[current_tab][file]['wav_sorted'][0][0]- dict[current_tab][file]['buttons']['consent_button']
-
-                    #print(dict[current_tab][file]['t0'],'after')
-                #print("after")
-                #print(dict[current_tab][file]['wav_sorted'])
-                #print("type_after")
-                #print(type(dict[current_tab][file]['wav_sorted']))
-                '''
 
     print("subject_with_faculty",subject_with_faculty)
     print("subject_with_faculty_equal_1st_wav",subject_with_faculty_equal_1st_wav)
@@ -1069,10 +1057,11 @@ def create_excel(dict):
 
             # normalized total listenning time
             if v2['t0'] != -1:
-                x[subject_number, c] = float(v2['listen_t']['tot']) / (60.0 - float(v2['t0'].seconds))
+                if float(v2['listen_t']['tot'])<=60.0-float(v2['t0'].seconds):
+                    x[subject_number, c] = float(v2['listen_t']['tot']) / (60.0 - float(v2['t0'].seconds))
+
             else:
                 x[subject_number, c] = -1
-                # x[subject_number, c] = float(v2['listen_t']['tot']) / (60.0 - float(v2['t0']))
             c += 1
             if subject_number == 0:
                 column_titles.append('normalized total listenning time')
@@ -1108,7 +1097,7 @@ def create_excel(dict):
                  if x[i,2] == 2:
                      x[i, j] = ""
              if j == (x_size-1):    # normalized total listening time
-                 if x[i, j] < 0.0: # or x[i, j] > 0.5:
+                 if x[i, j] < 0.0 or x[i, j] > 1.0 : # or x[i, j] > 0.5:
                      x[i, j] = ""
              if j in range(3,x_size):
                  if x[i,j]== -1:
