@@ -1110,8 +1110,8 @@ def create_excel(dict):
                     x[i, j] = ""
              if j == 4 and x[i, 2] == 1: #check faculty for exp 1
                  if x[i,4] == 3: #suspicious in entering default value
-                     #print(x[i,3],"gender", x[i,5],"age",x[i,6],"email")
-                     print("LIOR I LOVE YOU!!!")
+                     print(x[i,3],"gender", x[i,5],"age",x[i,6],"email")
+                     #print("LIOR I LOVE YOU!!!")
 
              if j == 3 and x[i, 2] == 2: #check gender for exp 2
                  if x[i,3] == 1: #suspicious in entering default value
