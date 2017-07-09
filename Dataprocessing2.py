@@ -857,7 +857,7 @@ def create_excel(dict):
             number_of_subjects += 1
     print('number_of_subjects: ', number_of_subjects)
 
-    x_size = 53 + 2*len(emotion_list) + 1
+    x_size = 54 + 2*len(emotion_list) + 1
     x = np.ndarray((number_of_subjects, x_size)).astype(object)
     column_titles = []   #columns_titles
     subject_number = -1  #columns_amount
@@ -888,12 +888,6 @@ def create_excel(dict):
             #if subject_number == 0:
 
 
-        #     #email
-        #     x[subject_number, c] = v2['personal_info']['email']
-        # #print(x[subject_number, c])
-        #     c += 1
-        #     if subject_number == 0:
-        #          column_titles.append('email')
 
             #gender
             x[subject_number, c] = float(gender_list.index(v2['personal_info']['gender']))
@@ -917,6 +911,15 @@ def create_excel(dict):
             c += 1
             if subject_number == 0:
                 column_titles.append('age')
+
+
+            #email
+            x[subject_number, c] = v2['personal_info']['email']
+            #print(x[subject_number, c])
+            c += 1
+            if subject_number == 0:
+                 column_titles.append('email')
+
 
             # buttons   --- needed???
 
@@ -1105,6 +1108,16 @@ def create_excel(dict):
              if j == 52:  # BFI
                 if x[i, j] < 0.0:
                     x[i, j] = ""
+             if j == 4 and x[i, 2] == 1: #check faculty for exp 1
+                 if x[i,4] == 3: #suspicious in entering default value
+                     #print(x[i,3],"gender", x[i,5],"age",x[i,6],"email")
+                     print("LIOR I LOVE YOU!!!")
+
+             if j == 3 and x[i, 2] == 2: #check gender for exp 2
+                 if x[i,3] == 1: #suspicious in entering default value
+                     print(x[i,5],"age",x[i,6],"email")
+
+
 
     x=np.insert(x,0,np.array(column_titles),0)
     #print("counter!!!!",count)
