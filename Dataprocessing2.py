@@ -914,8 +914,14 @@ def create_excel(dict):
 
 
             #email
-            x[subject_number, c] = v2['personal_info']['email']
-            #print(x[subject_number, c])
+            if "bugiher111@gmail.com" in str(v2['personal_info']['email']):
+                x[subject_number, c] = "bugiher111@gmail.com"
+            elif "guy1996@gmail.com" in str(v2['personal_info']['email']):
+                x[subject_number, c] = "guy1996@gmail.com"
+            else:
+                x[subject_number, c] = v2['personal_info']['email']
+
+
             c += 1
             if subject_number == 0:
                  column_titles.append('email')
@@ -1073,6 +1079,7 @@ def create_excel(dict):
     x[:,0]=x[:,0]+1
     x[:,:]=x[:,:x_size]
 
+    print(column_titles)
     #clean O and more
     for i in range(x.shape[0]): #row index
          for j in range(x.shape[1]):  #column index
@@ -1081,42 +1088,48 @@ def create_excel(dict):
                      x[i, j] = ""
                  if x[i, j] == 102:
                      x[i, j] = ""
-             if j == 6:  # t0
+
+             if j == 7:  # t0
                  if x[i, j] == -1:
                      x[i, j] = ""
                  if x[i, j] > 1.0:
                      x[i, j] = ""
-                 # if x[i,6] > x[i,7]:
-                 #     x[i, j] = ""
-             if j == 7:  # total listening time
+
+             if j == 8:  # total listening time
                  if x[i, j] > 1.0:
                      x[i, j] = ""
-             if j in [28,29,30]:  # CEI ,STR,EMR,TOT
+
+             if j in [29,30,31]:  # CEI ,STR,EMR,TOT
                  if x[i, j] < 0.0:
                      x[i, j] = ""
-             # if x[i,6] > 0 and x[i, 6] > x[i, 7]:
-                 #     x[i, j] = ""
+
              if j == 4:  # expr 2 had no faculty, bug fix
                  if x[i,2] == 2:
                      x[i, j] = ""
+
              if j == (x_size-1):    # normalized total listening time
                  if x[i, j] < 0.0 or x[i, j] > 1.0 : # or x[i, j] > 0.5:
                      x[i, j] = ""
              if j in range(3,x_size):
                  if x[i,j]== -1:
                      x[i,j]=""
-             if j == 52:  # BFI
+             if j == 53:  # BFI
                 if x[i, j] < 0.0:
                     x[i, j] = ""
+
              if j == 4 and x[i, 2] == 1: #check faculty for exp 1
-                 if x[i,4] == 3: #suspicious in entering default value
-                     print(x[i,3],"gender", x[i,5],"age",x[i,6],"email")
-                     #print("LIOR I LOVE YOU!!!")
+                 if x[i,4] == 3.0 and x[i,3] == 0.0 : #suspicious in entering default value
+                     x[i, 4] == ""
+                     #print(x[i,3],"gender", x[i,5],"age",x[i,6],"email")
 
              if j == 3 and x[i, 2] == 2: #check gender for exp 2
-                 if x[i,3] == 1: #suspicious in entering default value
-                     print(x[i,5],"age",x[i,6],"email")
+                 if x[i,3] == 1.0 and x[i,5] == 0.0 and x[i,6] == -1: #suspicious in entering default value
+                     x[i, 3] == ""
+                     #print(x[i,5],"age",x[i,6],"email")
 
+             if j not in [32,33,34,35,36,37,38,39,40,41,42,43,52]:  # remove 0.0
+                if x[i, j] == 0.0:
+                    x[i, j] = ""
 
 
     x=np.insert(x,0,np.array(column_titles),0)
