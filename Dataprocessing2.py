@@ -9,6 +9,9 @@ import matplotlib.pyplot as plt
 import operator
 import json
 from pprint import pprint
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 unicode_faculty = [unicode(x, 'utf-8') for x in ['תויונמא', 'הרבחה יעדמ', 'םייחה יעדמ', 'תואירבו האופר','הסדנה','חורה יעדמ', 'םיטפשמ', 'לוהינ', 'םיקיודמ םיעדמ']]
 unicode_gender = [unicode(x, 'utf-8') for x in ['רכז','הבקנ']]
@@ -70,6 +73,9 @@ def initial(num_tablet, experiments,path,faculty):
                                          "wav_sorted":{},
                                          "fac_heard":
                                                         {"art":0,"eng":0,"exa":0,"hum":0,"law":0,"lif":0,"man":0,"med":0,"soc":0},
+                                         "wav_amount":
+                                           {"art": 0, "eng": 0, "exa": 0, "hum": 0, "law": 0, "lif": 0, "man": 0,
+                                            "med": 0, "soc": 0},
                                          "e_multidis":0,
                                          "faces":-1}
 
@@ -318,6 +324,7 @@ def build_data_dict(amount_of_data,dict,num_tablet,row_data):
                             play_t = datetime.strptime(p_s[1], '%Y_%m_%d_%H_%M_%S_%f')
                             #print(wav,"play",play_t)
                     dict[current_tab][file]['listen_t'][wav.lower()] = stop_t - play_t
+                    dict[current_tab][file]["wav_amount"][wav[6:9].lower()] += 1
                     #print(wav,"['listen_t'][wav]",dict[current_tab][file]['listen_t'][wav])
                     dict[current_tab][file]["list_fac"][wav[6:9].lower()] += (stop_t - play_t).seconds
                     #print(wav[6:9],"[list_fac][wav[6:9]",dict[current_tab][file]["list_fac"][wav[6:9]])
@@ -850,6 +857,9 @@ def create_excel(dict):
     for i in age_list:
        age_list[age_list.index(i)]=str(i)
 
+    psy_grade_file = pd.ExcelFile(the_path+"PSY.xlsx")
+    psy_grade = psy_grade_file.parse('Sheet1')
+
     count=0
     number_of_subjects = 0
     for v in dict.values():
@@ -857,7 +867,7 @@ def create_excel(dict):
             number_of_subjects += 1
     print('number_of_subjects: ', number_of_subjects)
 
-    x_size = 54 + 2*len(emotion_list) + 1
+    x_size = 65 + 2*len(emotion_list) + 1
     x = np.ndarray((number_of_subjects, x_size)).astype(object)
     column_titles = []   #columns_titles
     subject_number = -1  #columns_amount
@@ -871,13 +881,13 @@ def create_excel(dict):
             x[subject_number, c] = float(subject_number)
             c += 1
             if subject_number == 0: # save the title only for the first file
-                column_titles.append('subject number')
+                column_titles.append('subject_number')
 
             #file
             x[subject_number, c] = k
             c += 1
             if subject_number == 0: # save the title only for the first file
-                column_titles.append('file name')
+                column_titles.append('file_name')
 
             #experiment
             x[subject_number, c] = float(experiments_list.index(v2['experiment']))
@@ -886,6 +896,16 @@ def create_excel(dict):
                 column_titles.append('experiment')
 
             #if subject_number == 0:
+            #email
+            if "bugiher111@gmail.com" in str(v2['personal_info']['email']):
+                x[subject_number, c] = "bugiher111@gmail.com"
+            elif "guy1996@gmail.com" in str(v2['personal_info']['email']):
+                x[subject_number, c] = "guy1996@gmail.com"
+            else:
+                x[subject_number, c] = v2['personal_info']['email']
+            c += 1
+            if subject_number == 0:
+                 column_titles.append('email')
 
 
 
@@ -904,6 +924,17 @@ def create_excel(dict):
                 column_titles.append('faculty')
 
 
+            #facultyside
+            if faculty_list.index(v2['personal_info']['faculty']) in [3,4,5,9]:
+                x[subject_number, c] = "1"
+            elif faculty_list.index(v2['personal_info']['faculty']) in [1,2,6,7,8]:
+                x[subject_number, c] = "2"
+
+            #print(v2['personal_info']['faculty'])
+            c += 1
+            if subject_number == 0:
+                column_titles.append('faculty_side')
+
             #age
             if v2['personal_info']['age']==-1:
                 v2['personal_info']['age']="-1"
@@ -913,18 +944,6 @@ def create_excel(dict):
                 column_titles.append('age')
 
 
-            #email
-            if "bugiher111@gmail.com" in str(v2['personal_info']['email']):
-                x[subject_number, c] = "bugiher111@gmail.com"
-            elif "guy1996@gmail.com" in str(v2['personal_info']['email']):
-                x[subject_number, c] = "guy1996@gmail.com"
-            else:
-                x[subject_number, c] = v2['personal_info']['email']
-
-
-            c += 1
-            if subject_number == 0:
-                 column_titles.append('email')
 
 
             # buttons   --- needed???
@@ -943,7 +962,7 @@ def create_excel(dict):
             x[subject_number, c] = float(v2['listen_t']['tot']) / 60.0
             c += 1
             if subject_number == 0:
-                column_titles.append('total listenning time')
+                column_titles.append('total_listenning_time')
 
 
             #curiosity_questions
@@ -956,7 +975,7 @@ def create_excel(dict):
                     #print(x[subject_number, c] )
 
                 if subject_number == 0:
-                    column_titles.append('curiosity question ' + str(i+1))
+                    column_titles.append('curiosity_question_' + str(i+1))
 
             #curiosity_questions stre- normalized [0.0, 1.0]
             if float(v2["curiosity_ques_stre"]) > 0:
@@ -966,7 +985,7 @@ def create_excel(dict):
                 x[subject_number, c] = -1
             c += 1
             if subject_number == 0:
-                column_titles.append('curiosity_ques_stretching')
+                column_titles.append('CEI_II_stre')
 
             #curiosity_questions embr - normalized [0.0, 1.0]
             if float(v2["curiosity_ques_embr"]) > 0:
@@ -976,7 +995,7 @@ def create_excel(dict):
                 x[subject_number, c] = -1
             c += 1
             if subject_number == 0:
-                column_titles.append('curiosity_ques_embracing')
+                column_titles.append('CEI_II_embr')
 
             #curiosity_questions TOTAL- normalized [0.0, 1.0]
             if float(v2["curiosity_ques_stre"]) > 0 and float(v2["curiosity_ques_embr"]) > 0:
@@ -986,7 +1005,7 @@ def create_excel(dict):
                 x[subject_number, c] = -1
             c += 1
             if subject_number == 0:
-                column_titles.append('curiosity_ques_embr+strt TOTAL')
+                column_titles.append('CEI_II_Total')
 
             #transition count-?
 
@@ -996,14 +1015,14 @@ def create_excel(dict):
             x[subject_number, c] = float(v2['trans_matrix']['e_trans'])
             c += 1
             if subject_number == 0:
-                column_titles.append('transition entropy')
+                column_titles.append('transition_entropy')
 
 
             #len(wav_sorted)
             x[subject_number, c] =  float(len(v2["wav_sorted"]))
             c += 1
             if subject_number == 0:
-                column_titles.append('wavs amount')
+                column_titles.append('wavs_amount')
 
 
              #listening time - per faculty
@@ -1011,14 +1030,20 @@ def create_excel(dict):
                 x[subject_number, c] =  float(v2['fac_heard'][i])
                 c += 1
                 if subject_number == 0:
-                    column_titles.append('listening per faculty:' + str(i))
+                    column_titles.append('listening_per_faculty_' + str(i))
 
+            # wav amounts - per faculty
+            for i in v2['wav_amount']:
+                x[subject_number, c] = float(v2['wav_amount'][i])
+                c += 1
+                if subject_number == 0:
+                    column_titles.append('wav_amount_per_faculty_' + str(i))
 
             #Multi entropy
             x[subject_number, c] =  float(v2["e_multidis"])
             c += 1
             if subject_number == 0:
-                column_titles.append('Multi discipline entropy')
+                column_titles.append('Multi_discipline_entropy')
 
             #learning questions
             q_num=0
@@ -1030,14 +1055,14 @@ def create_excel(dict):
 
             if subject_number == 0:
                 for j in range(4):                                    # 4 or 5
-                    column_titles.append('learning ' + str(j+1))
-                    column_titles.append('learning ' + str(j + 1) + "- answer")
+                    column_titles.append('learning_' + str(j+1))
+                    column_titles.append('learning_' + str(j + 1) + "_answer")
             c +=8
 
             x[subject_number, c] =  float(v2["learning_ques"]["learning %"])
             c += 1
             if subject_number == 0:
-                column_titles.append('learning %')
+                column_titles.append('learning_prec')
 
 
             # BFI - normalized [0.0, 1.0]
@@ -1050,8 +1075,8 @@ def create_excel(dict):
             # faces normalized [0.0, 1.0]
             if subject_number == 0:
                 for emotion in emotion_list:
-                    column_titles.append(emotion + " mean")
-                    column_titles.append(emotion + " std")
+                    column_titles.append(emotion + "_mean")
+                    column_titles.append(emotion + "_std")
             if v2['faces']!=-1:
                 count += 1
                 for emotion in emotion_list:
@@ -1064,6 +1089,16 @@ def create_excel(dict):
             else:
                 c+=2*len(emotion_list)
 
+
+            # Psychometric test grade
+            for i in psy_grade["email"]:
+                if i == v2['personal_info']['email']:
+                    x[subject_number, c] = float(psy_grade.loc[psy_grade['email'] == v2['personal_info']['email'], 'psychometric'])
+            #x[subject_number, c] /= 5.0
+            c += 1
+            if subject_number == 0:
+                column_titles.append('PSY')
+
             # normalized total listenning time
             if v2['t0'] != -1:
                 if float(v2['listen_t']['tot'])<=60.0-float(v2['t0'].seconds):
@@ -1073,7 +1108,7 @@ def create_excel(dict):
                 x[subject_number, c] = -1
             c += 1
             if subject_number == 0:
-                column_titles.append('normalized total listenning time')
+                column_titles.append('normalized_total_listenning_time')
 
     #print(x.shape())
     x[:,0]=x[:,0]+1
@@ -1083,59 +1118,63 @@ def create_excel(dict):
     #clean O and more
     for i in range(x.shape[0]): #row index
          for j in range(x.shape[1]):  #column index
-             if j == 5: #age
+             if j == 7: #age
                  if x[i, j] == 101:
                      x[i, j] = ""
                  if x[i, j] == 102:
                      x[i, j] = ""
 
-             if j == 7:  # t0
+             if j == 8:  # t0
                  if x[i, j] == -1:
                      x[i, j] = ""
                  if x[i, j] > 1.0:
                      x[i, j] = ""
 
-             if j == 8:  # total listening time
+             if j == 9:  # total listening time
                  if x[i, j] > 1.0:
                      x[i, j] = ""
 
-             if j in [29,30,31]:  # CEI ,STR,EMR,TOT
+             if j in [30,31,32]:  # CEI ,STR,EMR,TOT
                  if x[i, j] < 0.0:
                      x[i, j] = ""
 
-             if j == 4:  # expr 2 had no faculty, bug fix
+             if j == 5:  # expr 2 had no faculty, bug fix
                  if x[i,2] == 2:
                      x[i, j] = ""
+                     x[i,j+1]= ""
 
              if j == (x_size-1):    # normalized total listening time
                  if x[i, j] < 0.0 or x[i, j] > 1.0 : # or x[i, j] > 0.5:
                      x[i, j] = ""
+
              if j in range(3,x_size):
                  if x[i,j]== -1:
                      x[i,j]=""
-             if j == 53:  # BFI
+             if j == 63:  # BFI
                 if x[i, j] < 0.0:
                     x[i, j] = ""
 
-             if j == 4 and x[i, 2] == 1: #check faculty for exp 1
-                 if x[i,4] == 3.0 and x[i,3] == 0.0 : #suspicious in entering default value
-                     x[i, 4] == ""
+             if j == 5 and x[i, 2] == 1: #check faculty for exp 1
+                 if x[i,5] == 3.0 and x[i,4] == 0.0 : #suspicious in entering default value (check gender)
+                     x[i, 5] == ""
+                     x[i, 6] == ""
                      #print(x[i,3],"gender", x[i,5],"age",x[i,6],"email")
 
-             if j == 3 and x[i, 2] == 2: #check gender for exp 2
-                 if x[i,3] == 1.0 and x[i,5] == 0.0 and x[i,6] == -1: #suspicious in entering default value
-                     x[i, 3] == ""
+             if j == 4 and x[i, 2] == 2: #check gender for exp 2
+                 if x[i,4] == 1.0 and x[i,7] == 0.0 and x[i,2] == -1: #suspicious in entering default value(check age and email)
+                     x[i, 4] == ""
                      #print(x[i,5],"age",x[i,6],"email")
 
-             if j not in [32,33,34,35,36,37,38,39,40,41,42,43,52]:  # remove 0.0
+             if j not in [33,53,62]:  # remove 0.0 if not entropies or learning %
                 if x[i, j] == 0.0:
                     x[i, j] = ""
+
 
 
     x=np.insert(x,0,np.array(column_titles),0)
     #print("counter!!!!",count)
 
-    np.savetxt(analysis_path + "ALL_DATA_normalized.csv", x,'%s', delimiter=",")
+    np.savetxt(analysis_path + "ALL_DATA_normalized_Aug2.csv", x,'%s', delimiter=",")
     print(column_titles)
 
 
