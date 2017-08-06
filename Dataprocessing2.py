@@ -1099,6 +1099,8 @@ def create_excel(dict):
             if subject_number == 0:
                 column_titles.append('PSY')
 
+            #subject_id
+
             # normalized total listenning time
             if v2['t0'] != -1:
                 if float(v2['listen_t']['tot'])<=60.0-float(v2['t0'].seconds):
