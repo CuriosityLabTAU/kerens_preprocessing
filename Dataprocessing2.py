@@ -49,6 +49,7 @@ def initial(num_tablet, experiments,path,faculty):
         for file in glob.glob(tab_path + "*.log"):        #glob.glob returns a list of path names that match the .log ending
             file= str(file)
             dict[current_tab][file]= { "experiment": None,
+                                       "subject_id": -1,
                                        "out_of_data": "",
                                        "personal_info":
                                            {"gender": "-1",
@@ -219,6 +220,13 @@ def build_data_dict(amount_of_data,dict,num_tablet,row_data):
                 except:
                     print(file,"age")
 
+                try:
+                    if current_value['data']['obj'] in ['subject_id']:
+                        dict[current_tab][file]['subject_id'] = current_value['data']['comment']
+                    else:
+                        dict[current_tab][file]['subject_id'] = "open_days"
+                except:
+                    print(file,"subject_id")
 
                 #### BUTTONS dict[current_tab][file]['buttons']=
                 try:
@@ -858,6 +866,7 @@ def create_excel(dict):
        age_list[age_list.index(i)]=str(i)
 
     psy_grade_file = pd.ExcelFile(the_path+"PSY.xlsx")
+    # go to excel with only 2 columns, first named "email" second named "psychometric" in sheet1
     psy_grade = psy_grade_file.parse('Sheet1')
 
     count=0
@@ -867,7 +876,7 @@ def create_excel(dict):
             number_of_subjects += 1
     print('number_of_subjects: ', number_of_subjects)
 
-    x_size = 65 + 2*len(emotion_list) + 1
+    x_size = 66 + 2*len(emotion_list) + 1
     x = np.ndarray((number_of_subjects, x_size)).astype(object)
     column_titles = []   #columns_titles
     subject_number = -1  #columns_amount
@@ -1100,6 +1109,10 @@ def create_excel(dict):
                 column_titles.append('PSY')
 
             #subject_id
+            x[subject_number, c] = float(v2['subject_id'])
+            c += 1
+            if subject_number == 0:
+                column_titles.append('subject_id')
 
             # normalized total listenning time
             if v2['t0'] != -1:
