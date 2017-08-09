@@ -13,6 +13,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+
 unicode_faculty = [unicode(x, 'utf-8') for x in ['תויונמא', 'הרבחה יעדמ', 'םייחה יעדמ', 'תואירבו האופר','הסדנה','חורה יעדמ', 'םיטפשמ', 'לוהינ', 'םיקיודמ םיעדמ']]
 unicode_gender = [unicode(x, 'utf-8') for x in ['רכז','הבקנ']]
 emotion_list = ['smirk','engagement','surprise','attention','joy','valence', 'smile']
@@ -40,6 +41,7 @@ def initial(num_tablet, experiments,path,faculty):
 
     for i in range(num_tablet):
         current_tab = 'Tab'+str(i+1)
+        print current_tab+ '##################'
         row_data[current_tab]={}
         dict[current_tab] = {}
         # os.chdir(path+str(i+1))      #change the current working directory to the given path
@@ -88,14 +90,20 @@ def initial(num_tablet, experiments,path,faculty):
                                                     # containing a Python literal or container display
 
             for key in data1.keys():
-                if key[5:10] == "02_03" or key[5:10] == '05_24':
-                    data1[key]["data"] = json.loads(data1[key]["data"])['log'] #ast.literal_eval(data1[key]["data"])["log"]
-                    #print(data1[key]["data"],"expr3")
-                else:
-                    data1[key]["data"] = json.loads(data1[key]["data"]) #ast.literal_eval(data1[key]["data"])
-                    #print(data1[key]["data"],"expr1-2")
-
+                #if key[5:10] == "02_03" or key[5:10] == '05_24':
+                try:
+                    data1[key]["data"] = json.loads(data1[key]["data"])['log']  # ast.literal_eval(data1[key]["data"])["log"]
+                    # print(data1[key]["data"],"expr3")
+                #else:
+                except:
+                    try:
+                        data1[key]["data"] = json.loads(data1[key]["data"])  # ast.literal_eval(data1[key]["data"])
+                    except:
+                        print data1[key]["data"]
+                        print file
+                        break
             row_data[current_tab][file] = data1
+
     return amount_of_data,row_data,dict
 
 
@@ -155,14 +163,17 @@ def build_data_dict(amount_of_data,dict,num_tablet,row_data):
         faces_data = json.load(face_data)
     #pprint(faces_data)
 
+
+
     for i in range(num_tablet):
+
         current_tab = 'Tab' + str(i + 1)
         amount_of_data['gender'][current_tab] = []
         amount_of_data['faculty'][current_tab] = []
         amount_of_data['email'][current_tab] = {}
         amount_of_data['age'][current_tab] = {}
         for file in dict[current_tab].keys():
-
+            time_of_subject_id = datetime.strptime('2010_02_01_07_12_15_057684', '%Y_%m_%d_%H_%M_%S_%f')
 
             amount_of_data['email'][current_tab][file] = []
             amount_of_data['age'][current_tab][file] = []
@@ -222,9 +233,10 @@ def build_data_dict(amount_of_data,dict,num_tablet,row_data):
 
                 try:
                     if current_value['data']['obj'] in ['subject_id']:
-                        dict[current_tab][file]['subject_id'] = current_value['data']['comment']
-                    else:
-                        dict[current_tab][file]['subject_id'] = "open_days"
+                        if time_of_subject_id < datetime.strptime(current_value['data']['time'], '%Y_%m_%d_%H_%M_%S_%f'):
+                            time_of_subject_id = datetime.strptime(current_value['data']['time'], '%Y_%m_%d_%H_%M_%S_%f')
+                            dict[current_tab][file]['subject_id'] = float(current_value['data']['comment'])
+
                 except:
                     print(file,"subject_id")
 
@@ -352,7 +364,10 @@ def build_data_dict(amount_of_data,dict,num_tablet,row_data):
                             #print(orig)
 
                         else:
-                            dict[current_tab][file]["learning_ques"]["ques-time"].remove(i)
+                            try:
+                                dict[current_tab][file]["learning_ques"]["ques-time"].remove(i)
+                            except:
+                                print file,"row 363"
                             #print(i,j,"first should bye")
                             #print(orig)
             correct=0
@@ -485,7 +500,7 @@ def data_processing(num_tablet,dict,faculty,faculty_en_to_heb ):
                         dict[current_tab][file]['wav_sorted'][datetime.strptime(p_s[1],'%Y_%m_%d_%H_%M_%S_%f')]=wav[6:9]
 
 
-    x = [["" for i in range(10)] for j in range(945)]
+    x = [["" for i in range(20)] for j in range(1600)]
     r=0
     subject_with_faculty=0
     subject_with_faculty_equal_1st_wav = 0
@@ -500,10 +515,11 @@ def data_processing(num_tablet,dict,faculty,faculty_en_to_heb ):
                 #print(type(dict[current_tab][file]['wav_sorted']))
                 dict[current_tab][file]['wav_sorted']=sorted(dict[current_tab][file]['wav_sorted'].items(),key=operator.itemgetter(0)) # seconds - problems with seconds
                 #dict[current_tab][file]["t0"] =datetime.strptime(dict[current_tab][file]['wav_sorted'][0][0], '%Y_%m_%d_%H_%M_%S_%f') - datetime.strptime(dict[current_tab][file]['buttons']['consent_button'], '%Y_%m_%d_%H_%M_%S_%f')
-                if dict[current_tab][file]['buttons'] and dict[current_tab][file]["t0"] == -1:
+                if 'consent_button' in dict[current_tab][file]['buttons'].keys():
+                    if dict[current_tab][file]['buttons'] and dict[current_tab][file]["t0"] == -1:
 
-                    dict[current_tab][file]["t0"] = dict[current_tab][file]['wav_sorted'][0][0] - \
-                                                    dict[current_tab][file]['buttons']['consent_button']
+                        dict[current_tab][file]["t0"] = dict[current_tab][file]['wav_sorted'][0][0] - \
+                                                        dict[current_tab][file]['buttons']['consent_button']
                     #print(dict[current_tab][file]['experiment'],dict[current_tab][file]['wav_sorted'][0][0],dict[current_tab][file]['buttons']['consent_button'], "T0")
                     #print(dict[current_tab][file]["t0"], "consent_button", file)
                     #print(file,dict[current_tab][file]["t0"],"t0")
@@ -525,7 +541,7 @@ def data_processing(num_tablet,dict,faculty,faculty_en_to_heb ):
 
                 c = 0
                 for y in (dict[current_tab][file]['wav_sorted2']):
-                    #print(file,c,r,y)
+                    print c,r,y
                     x[r][c] = y
                     c+=1
                 r+=1
@@ -856,7 +872,7 @@ def create_excel(dict):
     faculty_list = [unicode(x, 'utf-8') for x in faculty_list_non_unicode]
     gender_list_non_unicode = ["-1",'רכז','הבקנ']
     gender_list = [unicode(x, 'utf-8') for x in gender_list_non_unicode]
-    experiments_list = [None,"expr1","expr2","expr3","expr4"]
+    experiments_list = [None,"expr1","expr2","expr3","expr4","expr5","expr6","expr7","expr8","expr9","expr10","expr11","expr12"]
     #out_of_data_list=["","not at hour","not at day","curiosity_questions_not_full_amount, 1-9","curiosity_questions_is_empty, 0"]
     age_list=[-1,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,
               31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,
@@ -1098,21 +1114,28 @@ def create_excel(dict):
             else:
                 c+=2*len(emotion_list)
 
+            #subject_id
+            print v2['subject_id']
+            x[subject_number, c] = float(v2['subject_id'])
+            c += 1
+            if subject_number == 0:
+                column_titles.append('subject_id')
 
             # Psychometric test grade
             for i in psy_grade["email"]:
                 if i == v2['personal_info']['email']:
                     x[subject_number, c] = float(psy_grade.loc[psy_grade['email'] == v2['personal_info']['email'], 'psychometric'])
+
+            for i in psy_grade["subject_id"]:
+                if i == v2['subject_id']:
+                    x[subject_number, c] = float(psy_grade.loc[psy_grade['subject_id'] == v2['subject_id'], 'psychometric'])
+
             #x[subject_number, c] /= 5.0
             c += 1
             if subject_number == 0:
                 column_titles.append('PSY')
 
-            #subject_id
-            x[subject_number, c] = float(v2['subject_id'])
-            c += 1
-            if subject_number == 0:
-                column_titles.append('subject_id')
+
 
             # normalized total listenning time
             if v2['t0'] != -1:
@@ -1189,7 +1212,7 @@ def create_excel(dict):
     x=np.insert(x,0,np.array(column_titles),0)
     #print("counter!!!!",count)
 
-    np.savetxt(analysis_path + "ALL_DATA_normalized_Aug2.csv", x,'%s', delimiter=",")
+    np.savetxt(analysis_path + "ALL_DATA_normalized_Aug7.csv", x,'%s', delimiter=",")
     print(column_titles)
 
 

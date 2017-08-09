@@ -20,7 +20,7 @@ def load_affectiva(the_path, the_dates):
     for f in feelings:
         datum[f] = 0.0
     print('Tablet, number of files')
-    for t in range(1,6):
+    for t in range(1,16):
         the_tab = 'tab' + str(t)
         the_data[the_tab] = []
         p = the_path + 'faces//affectiva_' + str(t) + '//'
